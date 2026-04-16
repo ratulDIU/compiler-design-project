@@ -1,9 +1,12 @@
+-- ACCOUNTS TABLE
 CREATE TABLE accounts(
 id INTEGER PRIMARY KEY AUTOINCREMENT,
-account_number INTEGER,
-status TEXT
+account_number INTEGER UNIQUE,
+status TEXT DEFAULT 'ACTIVE',
+block_until TEXT
 );
 
+-- TRANSACTIONS TABLE
 CREATE TABLE transactions(
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 account INTEGER,
@@ -12,6 +15,7 @@ location TEXT,
 timestamp TEXT
 );
 
+-- FRAUD REPORTS
 CREATE TABLE fraud_reports(
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 account INTEGER,

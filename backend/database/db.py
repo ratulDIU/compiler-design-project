@@ -1,7 +1,9 @@
 import sqlite3
-
-DB_NAME = "atm.db"
+import os
 
 def get_connection():
-    conn = sqlite3.connect(DB_NAME)
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(BASE_DIR, "atm.db")
+
+    conn = sqlite3.connect(db_path)
     return conn

@@ -1,50 +1,54 @@
 document.getElementById("form").addEventListener("submit", async function(e){
 
-e.preventDefault()
+    e.preventDefault()
 
-const data = {
+    const account = parseInt(document.getElementById("account").value)
+    const interval = parseInt(document.getElementById("interval").value)
 
-account: document.getElementById("account").value,
+    const transactions = []
 
-transactions: [
+    for(let i = 1; i <= count; i++){
 
-{
-amount: parseInt(document.getElementById("amount1").value),
-location: document.getElementById("loc1").value
-},
+        const amountEl = document.getElementById("amount"+i)
+        const locEl = document.getElementById("loc"+i)
 
-{
-amount: parseInt(document.getElementById("amount2").value),
-location: document.getElementById("loc2").value
-},
+        if(amountEl && locEl && amountEl.value && locEl.value){
+            transactions.push({
+                amount: parseInt(amountEl.value),
+                location: locEl.value
+            })
+        }
+    }
 
-{
-amount: parseInt(document.getElementById("amount3").value),
-location: document.getElementById("loc3").value
-}
+    if(transactions.length === 0){
+        alert("Please add at least one transaction")
+        return
+    }
 
-],
+    const data = {
+        account: account,
+        transactions: transactions,
+        time_interval: interval
+    }
 
-time_interval: parseInt(document.getElementById("interval").value)
+    console.log(data)
 
-}
+    try{
 
-const response = await fetch("http://localhost:8000/analyze",{
+        const res = await fetch("http://127.0.0.1:8000/analyze",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(data)
+        })
 
-method:"POST",
+        const result = await res.json()
 
-headers:{
-"Content-Type":"application/json"
-},
+        localStorage.setItem("fraudResult", JSON.stringify(result))
+        window.location.href = "result.html"
 
-body: JSON.stringify(data)
-
-})
-
-const result = await response.json()
-
-localStorage.setItem("fraudResult", JSON.stringify(result))
-
-window.location.href = "result.html"
+    }catch(err){
+        console.error(err)
+        alert("Backend connection error!")
+    }
 
 })
