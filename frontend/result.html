@@ -2,7 +2,8 @@
 <html>
 <head>
 <title>Fraud Result</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 </head>
 
 <body class="bg-gray-100">
@@ -17,8 +18,10 @@
 
 </div>
 
-<script>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
 const data = JSON.parse(localStorage.getItem("fraudResult"))
 
 let html = ""
@@ -26,73 +29,58 @@ let html = ""
 if(!data){
     html = `<p class="text-red-500">No data found</p>`
 }
-
-// 🔴 PERMANENT BLOCK
 else if(data.status === "BLOCKED"){
     html = `
     <div class="text-red-600">
         <h3 class="text-lg font-bold">🚨 Account Permanently Blocked</h3>
         <p><b>Account:</b> ${data.account}</p>
-        <p class="mt-2">
-            Your account has been <b>permanently blocked</b> due to suspicious activity.
-        </p>
-        <p>Please contact your nearest bank branch immediately.</p>
-    </div>
-    `
+        <p>Your account has been permanently blocked due to suspicious activity.</p>
+    </div>`
 }
-
-// 🟡 TEMP BLOCK
 else if(data.status === "TEMP_BLOCK"){
-
-    const endTime = new Date(data.block_until)
-
-    function updateTimer(){
-        const now = new Date()
-        const diff = endTime - now
-
-        if(diff <= 0){
-            document.getElementById("result").innerHTML = `
-            <p class="text-green-600">✅ Block expired. You can try again.</p>
-            `
-            return
-        }
-
-        const hours = Math.floor(diff / (1000*60*60))
-        const minutes = Math.floor((diff % (1000*60*60)) / (1000*60))
-        const seconds = Math.floor((diff % (1000*60)) / 1000)
-
-        document.getElementById("result").innerHTML = `
-        <div class="text-yellow-600">
-            <h3 class="text-lg font-bold">⏳ Temporary Block</h3>
-            <p><b>Account:</b> ${data.account}</p>
-            <p>Your account is temporarily blocked.</p>
-            <p class="mt-2 font-bold">⏱ Time Remaining:</p>
-            <p>${hours}h ${minutes}m ${seconds}s</p>
-        </div>
-        `
-    }
-
-    updateTimer()
-    setInterval(updateTimer, 1000)
+    html = `<p class="text-yellow-600">⏳ Temporarily Blocked</p>`
 }
-
-// 🟢 NORMAL RESULT
 else{
     html = `
     <div class="text-green-700">
         <p><b>Account:</b> ${data.account}</p>
-        <p>Withdraw Count: ${data.withdraw_count}</p>
-        <p>Total Amount: ${data.total_amount}</p>
-        <p>Risk Score: ${data.risk_score}</p>
-        <p>Risk Level: ${data.risk_level}</p>
-        <p><b>Action:</b> ${data.action}</p>
-    </div>
-    `
+        <p>Risk: ${data.risk_level}</p>
+        <p>Score: ${data.risk_score}</p>
+        <p>Action: ${data.action}</p>
+    </div>`
 }
 
 document.getElementById("result").innerHTML = html
 
-</script>
 
+// ===============================
+// 🔥 MAP RENDER
+// ===============================
+if(data && data.transactions && data.transactions.length > 0){
+
+    const [lat, lon] = data.transactions[0].location.split(",")
+
+    const map = L.map('map').setView([lat, lon], 10)
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map)
+
+    data.transactions.forEach(t => {
+        const [lt, ln] = t.location.split(",")
+
+        let color = "green"
+        if(data.risk_level === "HIGH") color = "red"
+        if(data.risk_level === "MEDIUM") color = "orange"
+
+        L.circleMarker([lt, ln], {color: color})
+         .addTo(map)
+         .bindPopup(`Amount: ${t.amount}`)
+    })
+
+}else{
+    document.getElementById("map").innerHTML = "No location data"
+}
+</script>
 </body>
 </html>

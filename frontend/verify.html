@@ -1,0 +1,25 @@
+<input id="otp" placeholder="OTP">
+
+<button onclick="verify()">Verify</button>
+
+<script>
+async function verify(){
+
+const res = await fetch("http://127.0.0.1:8000/verify",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body: JSON.stringify({
+otp: otp.value
+})
+})
+
+const data = await res.json()
+
+if(data.message){
+alert("Verified")
+window.location.href="login.html"
+}else{
+alert(data.error)
+}
+}
+</script>

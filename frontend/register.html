@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Register</title>
+</head>
+
+<body>
+
+<h2>Register</h2>
+
+<input id="username" placeholder="User Name">
+<input id="account_number" placeholder="Account Number">
+<input id="email" placeholder="Email">
+<input id="pass" type="password" placeholder="New Password">
+<input id="confirm_pass" type="password" placeholder="Confirm Password">
+
+<button onclick="register()">Register</button>
+
+<script>
+async function register(){
+
+const usernameVal = document.getElementById("username").value.trim()
+const accountVal = document.getElementById("account_number").value.trim()
+const emailVal = document.getElementById("email").value.trim()
+const passVal = document.getElementById("pass").value
+const confirmVal = document.getElementById("confirm_pass").value
+
+// 🔐 validation
+if(!usernameVal || !accountVal || !emailVal || !passVal || !confirmVal){
+    alert("All fields are required")
+    return
+}
+
+if(passVal !== confirmVal){
+    alert("Passwords do not match")
+    return
+}
+
+try{
+
+const res = await fetch("http://127.0.0.1:8000/register",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body: JSON.stringify({
+username: usernameVal,
+account_number: accountVal,
+email: emailVal,
+password: passVal
+})
+})
+
+const data = await res.json()
+
+alert(data.message || data.error)
+
+if(data.message){
+    // 🔥 save account for verify page
+    localStorage.setItem("verifyAccount", accountVal)
+    window.location.href = "verify.html"
+}
+
+}catch(err){
+    console.error(err)
+    alert("Server error ❌")
+}
+
+}
+</script>
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 <html>
 <head>
 <title>ATM Fraud Detection</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/style.css">
 </head>
 
 <body class="bg-gray-100">
@@ -22,7 +22,10 @@ class="bg-green-500 text-white px-3 py-1 rounded">
 ➕ Add Transaction
 </button>
 
-<input id="interval" class="border p-2 w-full" placeholder="Time Interval">
+<!-- 🔥 TIME FIELD -->
+<div id="timeWrapper" style="display:none;">
+<input id="interval" class="border p-2 w-full" placeholder="Time Interval (minutes)">
+</div>
 
 <button type="submit" 
 class="bg-blue-500 text-white px-4 py-2 rounded w-full">
@@ -34,7 +37,6 @@ Analyze
 </div>
 
 <script>
-
 let count = 0
 
 function addTransaction(){
@@ -42,17 +44,66 @@ function addTransaction(){
     count++
 
     const div = document.createElement("div")
-    div.className = "flex gap-2"
+    div.className = "flex gap-2 mt-2"
 
     div.innerHTML = `
-        <input id="amount${count}" class="border p-2 w-full" placeholder="Amount">
-        <input id="loc${count}" class="border p-2 w-full" placeholder="Location">
-        <button type="button" onclick="this.parentElement.remove()" class="bg-red-500 text-white px-2">X</button>
+        <input id="amount${count}" class="border p-2 w-full" placeholder="Withdraw Amount">
+
+        <input id="loc${count}" class="border p-2 w-full bg-gray-100" 
+        placeholder="Auto Detect Location" readonly>
+
+        <button type="button" onclick="detectLocation(${count})"
+        class="bg-yellow-500 text-white px-2">📍</button>
+
+        <button type="button" onclick="removeTransaction(this)" 
+        class="bg-red-500 text-white px-2">X</button>
     `
 
     document.getElementById("transactions").appendChild(div)
+
+    toggleTimeField()
 }
 
+
+// ❌ REMOVE TRANSACTION
+function removeTransaction(btn){
+    btn.parentElement.remove()
+    count--
+    toggleTimeField()
+}
+
+
+// 🔥 SHOW/HIDE TIME FIELD
+function toggleTimeField(){
+    const timeDiv = document.getElementById("timeWrapper")
+
+    if(count > 1){
+        timeDiv.style.display = "block"
+    }else{
+        timeDiv.style.display = "none"
+    }
+}
+
+
+// 📍 AUTO DETECT
+function detectLocation(index){
+
+    if(!navigator.geolocation){
+        alert("Geolocation not supported")
+        return
+    }
+
+    navigator.geolocation.getCurrentPosition(position => {
+
+        const lat = position.coords.latitude
+        const lon = position.coords.longitude
+
+        document.getElementById("loc"+index).value = `${lat},${lon}`
+
+    }, () => {
+        alert("Location permission denied")
+    })
+}
 </script>
 
 <script src="js/app.js"></script>
