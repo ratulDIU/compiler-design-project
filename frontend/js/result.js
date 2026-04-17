@@ -324,24 +324,54 @@ function startBlockTimer(){
     if(!timer || !data.block_until) return
 
     const endTime = new Date(data.block_until)
+    let timerId = null
+
+    function formatPart(value){
+        return String(Math.max(0, value)).padStart(2, "0")
+    }
 
     function update(){
         const diff = endTime - new Date()
 
         if(diff <= 0){
-            timer.textContent = "Block expired. Try a new analysis."
+            timer.innerHTML = `
+                <div class="countdown-expired">Block expired. Try a new analysis.</div>
+            `
+            if(timerId){
+                clearInterval(timerId)
+            }
             return
         }
 
-        const hours = Math.floor(diff / (1000 * 60 * 60))
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
         const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
-        timer.textContent = `${hours}h ${minutes}m ${seconds}s remaining`
+        timer.innerHTML = `
+            <div class="countdown-grid">
+                <div class="countdown-box">
+                    <strong>${formatPart(days)}</strong>
+                    <span>Days</span>
+                </div>
+                <div class="countdown-box">
+                    <strong>${formatPart(hours)}</strong>
+                    <span>Hours</span>
+                </div>
+                <div class="countdown-box">
+                    <strong>${formatPart(minutes)}</strong>
+                    <span>Minutes</span>
+                </div>
+                <div class="countdown-box">
+                    <strong>${formatPart(seconds)}</strong>
+                    <span>Seconds</span>
+                </div>
+            </div>
+        `
     }
 
     update()
-    setInterval(update, 1000)
+    timerId = setInterval(update, 1000)
 }
 
 function renderResult(){
@@ -360,8 +390,8 @@ function renderResult(){
         titleEl.textContent = "Temporary Block Applied"
         summaryEl.textContent = "The account is restricted while suspicious activity cools down."
     }else{
-        titleEl.textContent = `${level} Risk Detected`
-        summaryEl.textContent = "The transaction pattern is cleared with the action below."
+        titleEl.textContent = "Account Safe and Active"
+        summaryEl.textContent = "The transaction pattern looks normal and no block was applied."
     }
 
     resultEl.innerHTML = `
@@ -369,7 +399,12 @@ function renderResult(){
             <p class="eyebrow">Status</p>
             <h2>${safeValue(data.status, "ACTIVE")}</h2>
             <p>${safeValue(data.message, "Analysis completed.")}</p>
-            ${data.block_until ? `<p id="blockTimer" class="timer-text"></p>` : ""}
+            ${data.block_until ? `
+                <div class="timer-panel">
+                    <p class="timer-label">Block countdown</p>
+                    <div id="blockTimer" class="timer-text"></div>
+                </div>
+            ` : ""}
         </article>
 
         <article class="result-card">
@@ -385,8 +420,8 @@ function renderResult(){
                     <dd>${safeValue(data.risk_score, "0")}</dd>
                 </div>
                 <div>
-                    <dt>Action</dt>
-                    <dd>${safeValue(data.action, "WARNING")}</dd>
+                    <dt>Result</dt>
+                    <dd>${safeValue(data.action, "SAFE")}</dd>
                 </div>
                 <div>
                     <dt>Total Amount</dt>

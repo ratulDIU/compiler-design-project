@@ -33,6 +33,32 @@ def save_fraud_report(account, score, level, action):
     conn.commit()
     conn.close()
 
+
+def get_latest_fraud_report(account):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT risk_score, risk_level, action, created_at
+    FROM fraud_reports
+    WHERE account=?
+    ORDER BY id DESC LIMIT 1
+    """, (account,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    risk_score, risk_level, action, created_at = row
+    return {
+        "risk_score": risk_score,
+        "risk_level": risk_level,
+        "action": action,
+        "created_at": created_at
+    }
+
 # ---------------------------
 # DB HELPERS
 # ---------------------------
@@ -197,6 +223,31 @@ def get_recent_transactions(account):
 
     return rows
 
+
+def get_recent_transaction_summary(account):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT amount, location, timestamp
+    FROM transactions
+    WHERE account=?
+    AND datetime(timestamp) >= datetime('now', '-24 hours')
+    ORDER BY id ASC
+    """, (account,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [
+        {
+            "amount": amount,
+            "location": location,
+            "timestamp": timestamp
+        }
+        for amount, location, timestamp in rows
+    ]
+
 # ---------------------------
 # MAIN FUNCTION
 # ---------------------------
@@ -210,13 +261,17 @@ def analyze_transaction(data):
 
     # 🔴 Check block status
     status_data = check_card_status(account)
+    latest_report = get_latest_fraud_report(account)
 
     if status_data["status"] == "BLOCKED":
         return {
             "account": account,
             "message": "🚨 Account permanently blocked",
             "status": "BLOCKED",
-            "transactions": get_last_transaction_summary(account, transactions)
+            "risk_score": latest_report["risk_score"] if latest_report else 0,
+            "risk_level": latest_report["risk_level"] if latest_report else "HIGH",
+            "action": latest_report["action"] if latest_report else "PERMANENT BLOCK",
+            "transactions": get_recent_transaction_summary(account) or get_last_transaction_summary(account, transactions)
         }
 
     if status_data["status"] == "TEMP_BLOCK":
@@ -225,7 +280,10 @@ def analyze_transaction(data):
             "message": "⏳ Account temporarily blocked",
             "status": "TEMP_BLOCK",
             "block_until": status_data["block_until"],
-            "transactions": get_last_transaction_summary(account, transactions)
+            "risk_score": latest_report["risk_score"] if latest_report else 0,
+            "risk_level": latest_report["risk_level"] if latest_report else "MEDIUM",
+            "action": latest_report["action"] if latest_report else "TEMPORARY BLOCK",
+            "transactions": get_recent_transaction_summary(account) or get_last_transaction_summary(account, transactions)
         }
 
     # ---------------------------
@@ -315,25 +373,33 @@ def analyze_transaction(data):
     for t in transactions:
         save_transaction(account, t["amount"], t["location"])
 
+    result_transactions = get_recent_transaction_summary(account)
+
     # ---------------------------
     # DECISION ENGINE
     # ---------------------------
     if risk_score <= 4:
         level = "LOW"
-        action = "WARNING"
+        action = "SAFE"
         status = "ACTIVE"
+        block_until = None
+        result_message = "Transaction pattern looks normal. Account remains active."
 
     elif risk_score <= 10:
         level = "MEDIUM"
         action = "TEMPORARY BLOCK"
         block_time = temp_block_card(account)
         status = "TEMP_BLOCK"
+        block_until = block_time.isoformat()
+        result_message = "Temporary block applied due to suspicious activity."
 
     else:
         level = "HIGH"
         action = "PERMANENT BLOCK"
         permanent_block(account)
         status = "BLOCKED"
+        block_until = None
+        result_message = "Account permanently blocked due to high-risk activity."
 
     save_fraud_report(account, risk_score, level, action)
 
@@ -345,7 +411,9 @@ def analyze_transaction(data):
         "risk_level": level,
         "action": action,
         "status": status,
+        "message": result_message,
+        "block_until": block_until,
         "distance_km": round(distance, 2),
         "time_diff_min": round(time_diff, 2),
-        "transactions": transactions
+        "transactions": result_transactions
     }

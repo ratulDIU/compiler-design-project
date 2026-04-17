@@ -170,10 +170,23 @@ function renderAnalytics(){
     const average = transactions.length ? Math.round(total / transactions.length) : 0
     const maxWithdrawal = Math.max(...transactions.map(item => Number(item.amount || 0)), 0)
     const locationCount = uniqueLocations(transactions)
+    const currentRiskScore = safeValue(data.risk_score, "0")
+    const currentRiskLevel = safeValue(data.risk_level, data.status === "BLOCKED" ? "HIGH" : data.status === "TEMP_BLOCK" ? "MEDIUM" : "LOW")
+    const currentAction = safeValue(data.action, data.status === "BLOCKED" ? "PERMANENT BLOCK" : data.status === "TEMP_BLOCK" ? "TEMPORARY BLOCK" : "SAFE")
+    const statusSummary = data.status === "BLOCKED"
+        ? `Account ${safeValue(data.account)} is permanently blocked after ${transactions.length} recorded transaction${transactions.length === 1 ? "" : "s"} with total withdrawal amount ${total}.`
+        : data.status === "TEMP_BLOCK"
+            ? `Account ${safeValue(data.account)} is temporarily blocked after ${transactions.length} recorded transaction${transactions.length === 1 ? "" : "s"} with total withdrawal amount ${total}.`
+            : `Account ${safeValue(data.account)} generated ${transactions.length} transaction record${transactions.length === 1 ? "" : "s"} with total withdrawal amount ${total}.`
+    const decisionText = data.status === "BLOCKED"
+        ? "The account is currently permanently blocked based on the latest fraud decision."
+        : data.status === "TEMP_BLOCK"
+            ? "The account is currently temporarily blocked based on the latest fraud decision."
+            : `The system returned ${currentRiskLevel} risk for this transaction pattern.`
 
-    riskScoreEl.textContent = safeValue(data.risk_score, "0")
-    riskLevelEl.textContent = safeValue(data.risk_level, "LOW")
-    summaryEl.textContent = `Account ${safeValue(data.account)} generated ${transactions.length} transaction record${transactions.length === 1 ? "" : "s"} with total withdrawal amount ${total}.`
+    riskScoreEl.textContent = currentRiskScore
+    riskLevelEl.textContent = currentRiskLevel
+    summaryEl.textContent = statusSummary
 
     contentEl.innerHTML = `
         <section class="analytics-kpis">
@@ -212,8 +225,8 @@ function renderAnalytics(){
         <section class="analytics-insights">
             <article>
                 <p class="eyebrow">Decision</p>
-                <h3>${safeValue(data.action, "WARNING")}</h3>
-                <p>The system returned ${safeValue(data.risk_level, "LOW")} risk for this transaction pattern.</p>
+                <h3>${currentAction}</h3>
+                <p>${decisionText}</p>
             </article>
             <article>
                 <p class="eyebrow">Pattern</p>
