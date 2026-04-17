@@ -159,6 +159,7 @@ function setupLogin(){
 
             localStorage.setItem("loggedInUsername", data.username)
             localStorage.setItem("loggedInAccount", data.account_number)
+            localStorage.setItem("loggedInEmail", data.email)
             setNotice("Login successful. Opening dashboard.", "success")
 
             setTimeout(() => {

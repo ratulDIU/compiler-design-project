@@ -124,6 +124,7 @@ async function analyzeFraud(payload){
 function logout(){
     localStorage.removeItem("loggedInUsername")
     localStorage.removeItem("loggedInAccount")
+    localStorage.removeItem("loggedInEmail")
     localStorage.removeItem("fraudResult")
     window.location.href = "login.html"
 }
@@ -205,7 +206,7 @@ form.addEventListener("submit", async function(e){
 
         localStorage.setItem("fraudResult", JSON.stringify({
             ...result,
-            transactions: transactions,
+            transactions: result.transactions || transactions,
             checked_at: new Date().toISOString()
         }))
         window.location.href = "result.html"

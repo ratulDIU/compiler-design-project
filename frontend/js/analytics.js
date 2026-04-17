@@ -4,12 +4,19 @@ const summaryEl = document.getElementById("analyticsSummary")
 const riskScoreEl = document.getElementById("riskScoreValue")
 const riskLevelEl = document.getElementById("riskLevelValue")
 const logoutBtn = document.getElementById("logoutBtn")
+const downloadPdfBtn = document.getElementById("downloadPdfBtn")
 
 function logout(){
     localStorage.removeItem("loggedInUsername")
     localStorage.removeItem("loggedInAccount")
+    localStorage.removeItem("loggedInEmail")
     localStorage.removeItem("fraudResult")
     window.location.href = "login.html"
+}
+
+function downloadPdf(){
+    document.title = `ATM Shield Report - Account ${safeValue(data && data.account, "Unknown")}`
+    window.print()
 }
 
 function safeValue(value, fallback = "N/A"){
@@ -222,4 +229,5 @@ function renderAnalytics(){
 }
 
 logoutBtn.addEventListener("click", logout)
+downloadPdfBtn.addEventListener("click", downloadPdf)
 renderAnalytics()

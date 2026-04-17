@@ -18,17 +18,15 @@
     return NUMBER;
 }
 
-[A-Za-z]+ {
+/* 🔥 support lat,lon */
+[0-9.,]+ {
     yylval.str = strdup(yytext);
     return CITY;
 }
 
 [ \t\n]   ;
-
 .         ;
 
 %%
 
-int yywrap(){
-    return 1;
-}
+int yywrap(){ return 1; }

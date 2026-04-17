@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile | ATM Shield</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="index.html">ATM Shield</a>
+        <nav class="top-actions">
+            <a class="btn btn-secondary" href="index.html">Home</a>
+            <a class="btn btn-secondary" href="dashboard.html">Dashboard</a>
+            <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
+        </nav>
+    </header>
+
+    <main class="profile-page">
+        <section class="profile-hero">
+            <div>
+                <p class="eyebrow">User Profile</p>
+                <h1>Account information</h1>
+                <p>These details are linked with the verified account used for fraud analysis.</p>
+            </div>
+        </section>
+
+        <section class="profile-card">
+            <div class="profile-avatar" id="profileAvatar">U</div>
+            <div class="profile-details">
+                <p id="profileNotice" class="notice" role="status"></p>
+                <dl class="profile-list">
+                    <div>
+                        <dt>User Name</dt>
+                        <dd id="profileUsername">Loading...</dd>
+                    </div>
+                    <div>
+                        <dt>Account Number</dt>
+                        <dd id="profileAccount">Loading...</dd>
+                    </div>
+                    <div>
+                        <dt>Email</dt>
+                        <dd id="profileEmail">Loading...</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+    </main>
+</div>
+<script src="js/profile.js"></script>
+</body>
+</html>

@@ -167,7 +167,7 @@ def login(data: dict):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT password, is_verified, card_number FROM users WHERE username=?",
+        "SELECT password, is_verified, card_number, email FROM users WHERE username=?",
         (username,),
     )
     row = cursor.fetchone()
@@ -176,7 +176,7 @@ def login(data: dict):
         conn.close()
         return {"error": "User not found"}
 
-    db_pass, verified, account_number = row
+    db_pass, verified, account_number, email = row
 
     if not verified:
         conn.close()
@@ -192,5 +192,39 @@ def login(data: dict):
     return {
         "message": "Login success",
         "username": username,
-        "account_number": account_number
+        "account_number": account_number,
+        "email": email
+    }
+
+
+# ===============================
+# PROFILE
+# ===============================
+@router.post("/profile")
+def profile(data: dict):
+
+    username = data.get("username")
+
+    if not username:
+        return {"error": "Please login first"}
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT username, card_number, email FROM users WHERE username=?",
+        (username,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return {"error": "User not found"}
+
+    username, account_number, email = row
+
+    return {
+        "username": username,
+        "account_number": account_number,
+        "email": email
     }

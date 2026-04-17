@@ -8,6 +8,7 @@ const locationCache = new Map()
 function logout(){
     localStorage.removeItem("loggedInUsername")
     localStorage.removeItem("loggedInAccount")
+    localStorage.removeItem("loggedInEmail")
     localStorage.removeItem("fraudResult")
     window.location.href = "login.html"
 }
@@ -90,6 +91,7 @@ function renderTransactions(transactions){
                     <span>${index + 1}</span>
                     <strong>${safeValue(item.amount)}</strong>
                     <em id="locationName${index}">${parseCoordinates(item.location) ? "Finding location name..." : safeValue(item.location)}</em>
+                    ${item.label ? `<small>${item.label}</small>` : ""}
                 </div>
             `).join("")}
         </div>
@@ -108,7 +110,8 @@ function renderMap(transactions){
 
             return {
                 ...coordinates,
-                amount: item.amount
+                amount: item.amount,
+                label: item.label
             }
         })
         .filter(point => point && Number.isFinite(point.lat) && Number.isFinite(point.lon))
@@ -137,7 +140,7 @@ function renderMap(transactions){
 
         L.marker(latLng)
             .addTo(map)
-            .bindPopup(`Transaction ${index + 1}<br>Amount: ${safeValue(point.amount)}`)
+            .bindPopup(`${safeValue(point.label, `Transaction ${index + 1}`)}<br>Amount: ${safeValue(point.amount)}`)
     })
 
     if(bounds.length > 1){
@@ -145,6 +148,29 @@ function renderMap(transactions){
     }
 
     mapNotice.textContent = "Map shows submitted transaction locations."
+}
+
+function renderBlockedGuidance(){
+    if(data.status !== "BLOCKED") return ""
+
+    return `
+        <article class="result-card wide-card blocked-guidance">
+            <div>
+                <p class="eyebrow">Permanent Block Notice</p>
+                <h2>Why this account is blocked</h2>
+                <p>This account is permanently blocked because the fraud engine detected a high-risk ATM pattern. This can happen after repeated withdrawals, high total withdrawal amount, location changes, or very short time between transactions.</p>
+            </div>
+            <div class="contact-steps">
+                <h3>What to do now</h3>
+                <ul>
+                    <li>Do not retry ATM withdrawals with this account.</li>
+                    <li>Contact your nearest bank branch or card support desk.</li>
+                    <li>Bring your account number, valid ID, and recent transaction details.</li>
+                </ul>
+                <a class="btn btn-primary" href="analytics.html">View Previous Record</a>
+            </div>
+        </article>
+    `
 }
 
 function totalTransactionAmount(transactions){
@@ -369,11 +395,13 @@ function renderResult(){
             </dl>
         </article>
 
-        <article class="result-card wide-card">
+        ${renderBlockedGuidance()}
+
+        <article id="previousRecordSection" class="result-card wide-card">
             <div class="transaction-header">
                 <div>
-                    <p class="eyebrow">Transactions</p>
-                    <h2>Submitted Withdrawals</h2>
+                    <p class="eyebrow">${data.status === "BLOCKED" ? "Previous Record" : "Transactions"}</p>
+                    <h2>${data.status === "BLOCKED" ? "Last Known Transaction" : "Submitted Withdrawals"}</h2>
                 </div>
             </div>
             ${renderTransactions(data.transactions)}
@@ -405,6 +433,7 @@ function renderResult(){
     startBlockTimer()
     hydrateLocationNames(data.transactions)
     renderMap(data.transactions)
+
 }
 
 logoutBtn.addEventListener("click", logout)

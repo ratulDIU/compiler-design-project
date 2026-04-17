@@ -51,6 +51,31 @@ def get_last_transaction(account):
     conn.close()
     return row
 
+def get_last_transaction_summary(account, fallback_transactions=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT amount, location, timestamp
+    FROM transactions
+    WHERE account=?
+    ORDER BY id DESC LIMIT 1
+    """, (account,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        amount, location, timestamp = row
+        return [{
+            "amount": amount,
+            "location": location,
+            "timestamp": timestamp,
+            "label": "Last saved transaction"
+        }]
+
+    return fallback_transactions or []
+
 
 def save_transaction(account, amount, location):
     conn = get_connection()
@@ -155,6 +180,22 @@ def unblock_card(account):
     conn.commit()
     conn.close()
 
+def get_recent_transactions(account):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT amount, location, timestamp 
+    FROM transactions 
+    WHERE account=? 
+    AND datetime(timestamp) >= datetime('now', '-24 hours')
+    """, (account,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return rows
 
 # ---------------------------
 # MAIN FUNCTION
@@ -174,7 +215,8 @@ def analyze_transaction(data):
         return {
             "account": account,
             "message": "🚨 Account permanently blocked",
-            "status": "BLOCKED"
+            "status": "BLOCKED",
+            "transactions": get_last_transaction_summary(account, transactions)
         }
 
     if status_data["status"] == "TEMP_BLOCK":
@@ -182,34 +224,55 @@ def analyze_transaction(data):
             "account": account,
             "message": "⏳ Account temporarily blocked",
             "status": "TEMP_BLOCK",
-            "block_until": status_data["block_until"]
+            "block_until": status_data["block_until"],
+            "transactions": get_last_transaction_summary(account, transactions)
         }
 
     # ---------------------------
-    # BASIC RISK
+    # 🔥 24H WINDOW LOGIC
     # ---------------------------
-    withdraw_count = len(transactions)
-    total_amount = sum(t["amount"] for t in transactions)
+    recent = get_recent_transactions(account)
+
+    withdraw_count = len(transactions) + len(recent)
+
+    total_amount = (
+        sum(t["amount"] for t in transactions) +
+        sum(r[0] for r in recent)
+    )
 
     locations = [t["location"] for t in transactions]
     location_change = len(set(locations)) > 1
 
+    # ---------------------------
+    # 🔥 ADVANCED RISK SCORING
+    # ---------------------------
     risk_score = 0
 
-    if withdraw_count >= 3:
-        risk_score += 3
+    # 1. FREQUENCY
+    if withdraw_count == 2:
+        risk_score += 2
+    elif withdraw_count >= 3:
+        risk_score += 5
 
-    if total_amount > 40000:
-        risk_score += 3
+    # 2. AMOUNT
+    if total_amount > 50000:
+        risk_score += 2
+    if total_amount > 100000:
+        risk_score += 4
 
+    # 3. LOCATION
     if location_change:
         risk_score += 3
 
-    if time_interval <= 5:
+    # 4. TIME BEHAVIOR
+    if 60 < time_interval <= 120:
         risk_score += 2
 
+    if time_interval <= 60:
+        risk_score += 3
+
     # ---------------------------
-    # 🔥 DISTANCE FRAUD LOGIC
+    # 🔥 DISTANCE FRAUD
     # ---------------------------
     last_tx = get_last_transaction(account)
 
@@ -230,14 +293,21 @@ def analyze_transaction(data):
 
             time_diff = (now - last_time).total_seconds() / 60
 
-            print("Distance:", distance, "Time:", time_diff)
-
-            # 🚨 RULE
+            # 🚨 impossible movement
             if distance > 100 and time_diff < 10:
                 risk_score += 5
 
         except:
-            pass  # avoid crash if bad data
+            pass
+
+    # ---------------------------
+    # 🔥 COMBO RULES (VERY IMPORTANT)
+    # ---------------------------
+    if withdraw_count >= 3 and total_amount > 100000:
+        risk_score += 5
+
+    if location_change and time_interval <= 5:
+        risk_score += 5
 
     # ---------------------------
     # SAVE TRANSACTIONS
@@ -248,12 +318,12 @@ def analyze_transaction(data):
     # ---------------------------
     # DECISION ENGINE
     # ---------------------------
-    if risk_score <= 3:
+    if risk_score <= 4:
         level = "LOW"
         action = "WARNING"
         status = "ACTIVE"
 
-    elif risk_score <= 6:
+    elif risk_score <= 10:
         level = "MEDIUM"
         action = "TEMPORARY BLOCK"
         block_time = temp_block_card(account)
@@ -264,16 +334,18 @@ def analyze_transaction(data):
         action = "PERMANENT BLOCK"
         permanent_block(account)
         status = "BLOCKED"
+
     save_fraud_report(account, risk_score, level, action)
+
     return {
-    "account": account,
-    "withdraw_count": withdraw_count,
-    "total_amount": total_amount,
-    "risk_score": risk_score,
-    "risk_level": level,
-    "action": action,
-    "status": status,
-    "distance_km": round(distance, 2),
-    "time_diff_min": round(time_diff, 2),
-    "transactions": transactions   # 🔥 ADD THIS LINE
-}
+        "account": account,
+        "withdraw_count": withdraw_count,
+        "total_amount": total_amount,
+        "risk_score": risk_score,
+        "risk_level": level,
+        "action": action,
+        "status": status,
+        "distance_km": round(distance, 2),
+        "time_diff_min": round(time_diff, 2),
+        "transactions": transactions
+    }
