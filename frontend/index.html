@@ -1,112 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>ATM Fraud Detection</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATM Shield | ATM Fraud Detection System</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
+<body>
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="index.html">ATM Shield</a>
+        <nav class="top-actions">
+            <a class="btn btn-secondary" href="login.html">Login</a>
+            <a class="btn btn-primary" href="register.html">Register</a>
+        </nav>
+    </header>
 
-<body class="bg-gray-100">
+    <main class="home-page">
+        <section class="home-hero">
+            <div>
+                <p class="eyebrow">ATM Fraud Detection System</p>
+                <h1>Detect risky ATM withdrawal patterns before damage spreads.</h1>
+                <p>ATM Shield helps verified users analyze withdrawal amount, location changes, transaction count, and time interval to identify suspicious activity.</p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="register.html">Create Account</a>
+                    <a class="btn btn-secondary" href="login.html">Already Registered</a>
+                </div>
+            </div>
+            <img src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=800&q=80" alt="Secure digital finance dashboard">
+        </section>
 
-<div class="max-w-xl mx-auto mt-10 bg-white p-6 rounded shadow">
+        <section class="home-section">
+            <div class="section-heading">
+                <p class="eyebrow">How It Works</p>
+                <h2>A simple secure flow</h2>
+                <p>Register once, verify your email OTP, then run fraud checks only for your own account number.</p>
+            </div>
 
-<h2 class="text-2xl font-bold mb-4">ATM Fraud Detection</h2>
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <span>01</span>
+                    <h3>Register Account</h3>
+                    <p>Create a user profile with your user name, account number, email, and password.</p>
+                </article>
+                <article class="feature-card">
+                    <span>02</span>
+                    <h3>Verify OTP</h3>
+                    <p>The system sends an OTP to the registered email address before login is allowed.</p>
+                </article>
+                <article class="feature-card">
+                    <span>03</span>
+                    <h3>Analyze Transactions</h3>
+                    <p>Submit withdrawal details and receive a risk level with the recommended account action.</p>
+                </article>
+            </div>
+        </section>
 
-<form id="form" class="space-y-3">
+        <section class="home-section split-section">
+            <div>
+                <p class="eyebrow">Risk Engine</p>
+                <h2>Signals checked by the system</h2>
+                <p>The backend calculates risk from multiple ATM behavior signals and returns a clear decision for the account.</p>
+            </div>
+            <ul class="signal-list">
+                <li><span>01</span> Three or more withdrawals</li>
+                <li><span>02</span> Total withdrawal amount above 40,000</li>
+                <li><span>03</span> Withdrawals from different locations</li>
+                <li><span>04</span> Very short time between transactions</li>
+            </ul>
+        </section>
 
-<input id="account" class="border p-2 w-full" placeholder="Account Number">
-
-<div id="transactions"></div>
-
-<button type="button" onclick="addTransaction()" 
-class="bg-green-500 text-white px-3 py-1 rounded">
-➕ Add Transaction
-</button>
-
-<!-- 🔥 TIME FIELD -->
-<div id="timeWrapper" style="display:none;">
-<input id="interval" class="border p-2 w-full" placeholder="Time Interval (minutes)">
+        <section class="cta-section">
+            <p class="eyebrow">Start Securely</p>
+            <h2>Ready to check an ATM transaction pattern?</h2>
+            <p>Create your account, verify OTP, and continue to the analysis dashboard.</p>
+            <a class="btn btn-primary" href="register.html">Register Now</a>
+        </section>
+    </main>
 </div>
-
-<button type="submit" 
-class="bg-blue-500 text-white px-4 py-2 rounded w-full">
-Analyze
-</button>
-
-</form>
-
-</div>
-
-<script>
-let count = 0
-
-function addTransaction(){
-
-    count++
-
-    const div = document.createElement("div")
-    div.className = "flex gap-2 mt-2"
-
-    div.innerHTML = `
-        <input id="amount${count}" class="border p-2 w-full" placeholder="Withdraw Amount">
-
-        <input id="loc${count}" class="border p-2 w-full bg-gray-100" 
-        placeholder="Auto Detect Location" readonly>
-
-        <button type="button" onclick="detectLocation(${count})"
-        class="bg-yellow-500 text-white px-2">📍</button>
-
-        <button type="button" onclick="removeTransaction(this)" 
-        class="bg-red-500 text-white px-2">X</button>
-    `
-
-    document.getElementById("transactions").appendChild(div)
-
-    toggleTimeField()
-}
-
-
-// ❌ REMOVE TRANSACTION
-function removeTransaction(btn){
-    btn.parentElement.remove()
-    count--
-    toggleTimeField()
-}
-
-
-// 🔥 SHOW/HIDE TIME FIELD
-function toggleTimeField(){
-    const timeDiv = document.getElementById("timeWrapper")
-
-    if(count > 1){
-        timeDiv.style.display = "block"
-    }else{
-        timeDiv.style.display = "none"
-    }
-}
-
-
-// 📍 AUTO DETECT
-function detectLocation(index){
-
-    if(!navigator.geolocation){
-        alert("Geolocation not supported")
-        return
-    }
-
-    navigator.geolocation.getCurrentPosition(position => {
-
-        const lat = position.coords.latitude
-        const lon = position.coords.longitude
-
-        document.getElementById("loc"+index).value = `${lat},${lon}`
-
-    }, () => {
-        alert("Location permission denied")
-    })
-}
-</script>
-
-<script src="js/app.js"></script>
-
 </body>
 </html>

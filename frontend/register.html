@@ -1,71 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Register</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account | ATM Shield</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
+<main class="auth-page">
+    <section class="auth-visual">
+        <img src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=900&q=80" alt="Secure digital banking screen">
+        <div class="auth-visual-copy">
+            <p class="eyebrow">ATM Shield</p>
+            <h1>Protect every withdrawal before it becomes a problem.</h1>
+            <p>Register your account, verify your OTP, and monitor suspicious transaction patterns in one secure workflow.</p>
+        </div>
+    </section>
 
-<h2>Register</h2>
+    <section class="auth-panel">
+        <a class="brand" href="login.html">ATM Shield</a>
+        <div class="section-heading">
+            <p class="eyebrow">New User</p>
+            <h2>Create your account</h2>
+            <p>Use the account number connected to your ATM card.</p>
+        </div>
 
-<input id="username" placeholder="User Name">
-<input id="account_number" placeholder="Account Number">
-<input id="email" placeholder="Email">
-<input id="pass" type="password" placeholder="New Password">
-<input id="confirm_pass" type="password" placeholder="Confirm Password">
+        <form id="registerForm" class="form-stack">
+            <label>
+                <span>User Name</span>
+                <input id="username" type="text" autocomplete="username" placeholder="Enter user name">
+            </label>
 
-<button onclick="register()">Register</button>
+            <label>
+                <span>Account Number</span>
+                <input id="account_number" type="text" inputmode="numeric" placeholder="Enter account number">
+            </label>
 
-<script>
-async function register(){
+            <label>
+                <span>Email</span>
+                <input id="email" type="email" autocomplete="email" placeholder="Enter email address">
+            </label>
 
-const usernameVal = document.getElementById("username").value.trim()
-const accountVal = document.getElementById("account_number").value.trim()
-const emailVal = document.getElementById("email").value.trim()
-const passVal = document.getElementById("pass").value
-const confirmVal = document.getElementById("confirm_pass").value
+            <label>
+                <span>New Password</span>
+                <input id="pass" type="password" autocomplete="new-password" placeholder="Create password">
+            </label>
 
-// 🔐 validation
-if(!usernameVal || !accountVal || !emailVal || !passVal || !confirmVal){
-    alert("All fields are required")
-    return
-}
+            <label>
+                <span>Confirm Password</span>
+                <input id="confirm_pass" type="password" autocomplete="new-password" placeholder="Confirm password">
+            </label>
 
-if(passVal !== confirmVal){
-    alert("Passwords do not match")
-    return
-}
+            <p id="notice" class="notice" role="status"></p>
+            <button class="btn btn-primary" type="submit">Send OTP</button>
+        </form>
 
-try{
-
-const res = await fetch("http://127.0.0.1:8000/register",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body: JSON.stringify({
-username: usernameVal,
-account_number: accountVal,
-email: emailVal,
-password: passVal
-})
-})
-
-const data = await res.json()
-
-alert(data.message || data.error)
-
-if(data.message){
-    // 🔥 save account for verify page
-    localStorage.setItem("verifyAccount", accountVal)
-    window.location.href = "verify.html"
-}
-
-}catch(err){
-    console.error(err)
-    alert("Server error ❌")
-}
-
-}
-</script>
-
+        <p class="auth-link">Already registered? <a href="login.html">Sign in</a></p>
+    </section>
+</main>
+<script src="js/auth.js"></script>
 </body>
 </html>

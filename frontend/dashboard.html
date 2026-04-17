@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transaction Check | ATM Shield</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="index.html">ATM Shield</a>
+        <nav class="top-actions">
+            <span id="sessionLabel" class="session-label">Checking session</span>
+            <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <section class="dashboard-intro">
+            <div>
+                <p class="eyebrow">Fraud Analysis</p>
+                <h1>Check a transaction pattern before approval.</h1>
+                <p>Enter the same account number used at registration. The system blocks analysis for any account that does not belong to the logged-in user.</p>
+            </div>
+            <img src="https://images.unsplash.com/photo-1556740758-90de374c12ad?auto=format&fit=crop&w=700&q=80" alt="Secure banking dashboard">
+        </section>
+
+        <section class="workspace">
+            <form id="form" class="analysis-form">
+                <div class="section-heading">
+                    <p class="eyebrow">Transaction Details</p>
+                    <h2>Analyze Withdrawals</h2>
+                    <p id="accountHint">Your registered account will be checked before analysis starts.</p>
+                </div>
+
+                <label>
+                    <span>Account Number</span>
+                    <input id="account" type="text" inputmode="numeric" placeholder="Enter account number">
+                </label>
+
+                <div class="transaction-header">
+                    <div>
+                        <h3>Withdrawals</h3>
+                        <p>Add each withdrawal amount and location.</p>
+                    </div>
+                    <button id="addTransactionBtn" class="btn btn-secondary" type="button">Add Transaction</button>
+                </div>
+
+                <div id="transactions" class="transaction-list"></div>
+
+                <label id="timeWrapper" class="hidden">
+                    <span>Time Interval</span>
+                    <input id="interval" type="number" min="1" placeholder="Minutes between withdrawals">
+                </label>
+
+                <p id="notice" class="notice" role="status"></p>
+                <button class="btn btn-primary" type="submit">Analyze Fraud Risk</button>
+            </form>
+
+            <aside class="summary-panel">
+                <p class="eyebrow">Rules</p>
+                <h2>Risk Signals</h2>
+                <ul class="signal-list">
+                    <li><span>01</span> Three or more withdrawals</li>
+                    <li><span>02</span> Total amount above 40,000</li>
+                    <li><span>03</span> Multiple withdrawal locations</li>
+                    <li><span>04</span> Very short time interval</li>
+                </ul>
+            </aside>
+        </section>
+    </main>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>

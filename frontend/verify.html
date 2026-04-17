@@ -1,25 +1,43 @@
-<input id="otp" placeholder="OTP">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify OTP | ATM Shield</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main class="auth-page compact-auth">
+    <section class="auth-visual">
+        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=80" alt="Card payment verification">
+        <div class="auth-visual-copy">
+            <p class="eyebrow">Email Verification</p>
+            <h1>One code confirms the account is yours.</h1>
+            <p>Enter the OTP sent to your email address to activate login access.</p>
+        </div>
+    </section>
 
-<button onclick="verify()">Verify</button>
+    <section class="auth-panel">
+        <a class="brand" href="login.html">ATM Shield</a>
+        <div class="section-heading">
+            <p class="eyebrow">OTP</p>
+            <h2>Verify your account</h2>
+            <p>Use the latest code from your email.</p>
+        </div>
 
-<script>
-async function verify(){
+        <form id="verifyForm" class="form-stack">
+            <label>
+                <span>OTP</span>
+                <input id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6 digit OTP">
+            </label>
 
-const res = await fetch("http://127.0.0.1:8000/verify",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body: JSON.stringify({
-otp: otp.value
-})
-})
+            <p id="notice" class="notice" role="status"></p>
+            <button class="btn btn-primary" type="submit">Verify Account</button>
+        </form>
 
-const data = await res.json()
-
-if(data.message){
-alert("Verified")
-window.location.href="login.html"
-}else{
-alert(data.error)
-}
-}
-</script>
+        <p class="auth-link">Need a new account? <a href="register.html">Register again</a></p>
+    </section>
+</main>
+<script src="js/auth.js"></script>
+</body>
+</html>

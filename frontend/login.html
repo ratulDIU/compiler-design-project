@@ -1,63 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Login</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | ATM Shield</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
+<main class="auth-page compact-auth">
+    <section class="auth-visual">
+        <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=900&q=80" alt="Financial security workspace">
+        <div class="auth-visual-copy">
+            <p class="eyebrow">Secure Login</p>
+            <h1>Review fraud signals with your verified account.</h1>
+            <p>Sign in with your user name and password to analyze transaction behavior.</p>
+        </div>
+    </section>
 
-<h2>Login</h2>
+    <section class="auth-panel">
+        <a class="brand" href="login.html">ATM Shield</a>
+        <div class="section-heading">
+            <p class="eyebrow">Welcome Back</p>
+            <h2>Sign in</h2>
+            <p>Only verified users can submit transaction checks.</p>
+        </div>
 
-<input id="username" placeholder="User Name">
-<input id="pass" type="password" placeholder="Password">
+        <form id="loginForm" class="form-stack">
+            <label>
+                <span>User Name</span>
+                <input id="username" type="text" autocomplete="username" placeholder="Enter user name">
+            </label>
 
-<button onclick="login()">Login</button>
+            <label>
+                <span>Password</span>
+                <input id="pass" type="password" autocomplete="current-password" placeholder="Enter password">
+            </label>
 
-<script>
-async function login(){
+            <p id="notice" class="notice" role="status"></p>
+            <button class="btn btn-primary" type="submit">Sign In</button>
+        </form>
 
-const usernameVal = document.getElementById("username").value.trim()
-const passVal = document.getElementById("pass").value
-
-if(!usernameVal || !passVal){
-    alert("Enter username and password")
-    return
-}
-
-try{
-
-const res = await fetch("http://127.0.0.1:8000/login",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body: JSON.stringify({
-username: usernameVal,
-password: passVal
-})
-})
-
-const data = await res.json()
-
-if(data.message){
-
-    alert("Login success ✅")
-
-    // 🔥 save session
-    localStorage.setItem("loggedInUsername", data.username)
-    localStorage.setItem("loggedInAccount", data.account_number)
-
-    window.location.href="index.html"
-
-}else{
-    alert(data.error)
-}
-
-}catch(err){
-    console.error(err)
-    alert("Server error ❌")
-}
-
-}
-</script>
-
+        <p class="auth-link">New to ATM Shield? <a href="register.html">Create account</a></p>
+    </section>
+</main>
+<script src="js/auth.js"></script>
 </body>
 </html>

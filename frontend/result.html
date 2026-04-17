@@ -1,86 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Fraud Result</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fraud Result | ATM Shield</title>
 <link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 </head>
+<body>
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="index.html">ATM Shield</a>
+        <nav class="top-actions">
+            <a class="btn btn-secondary" href="dashboard.html">New Analysis</a>
+            <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
+        </nav>
+    </header>
 
-<body class="bg-gray-100">
+    <main class="result-page">
+        <section class="result-hero">
+            <div>
+                <p class="eyebrow">Analysis Result</p>
+                <h1 id="resultTitle">Fraud Result</h1>
+                <p id="resultSummary">Review the account status and recommended action.</p>
+            </div>
+            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=700&q=80" alt="Financial analytics charts">
+        </section>
 
-<div class="max-w-lg mx-auto mt-20 bg-white p-6 rounded shadow">
-
-<h2 class="text-xl font-bold mb-4">Fraud Result</h2>
-
-<div id="result"></div>
-
-<a href="index.html" class="text-blue-500">← Back</a>
-
+        <section id="result" class="result-grid"></section>
+    </main>
 </div>
-
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script>
-const data = JSON.parse(localStorage.getItem("fraudResult"))
-
-let html = ""
-
-if(!data){
-    html = `<p class="text-red-500">No data found</p>`
-}
-else if(data.status === "BLOCKED"){
-    html = `
-    <div class="text-red-600">
-        <h3 class="text-lg font-bold">🚨 Account Permanently Blocked</h3>
-        <p><b>Account:</b> ${data.account}</p>
-        <p>Your account has been permanently blocked due to suspicious activity.</p>
-    </div>`
-}
-else if(data.status === "TEMP_BLOCK"){
-    html = `<p class="text-yellow-600">⏳ Temporarily Blocked</p>`
-}
-else{
-    html = `
-    <div class="text-green-700">
-        <p><b>Account:</b> ${data.account}</p>
-        <p>Risk: ${data.risk_level}</p>
-        <p>Score: ${data.risk_score}</p>
-        <p>Action: ${data.action}</p>
-    </div>`
-}
-
-document.getElementById("result").innerHTML = html
-
-
-// ===============================
-// 🔥 MAP RENDER
-// ===============================
-if(data && data.transactions && data.transactions.length > 0){
-
-    const [lat, lon] = data.transactions[0].location.split(",")
-
-    const map = L.map('map').setView([lat, lon], 10)
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-    }).addTo(map)
-
-    data.transactions.forEach(t => {
-        const [lt, ln] = t.location.split(",")
-
-        let color = "green"
-        if(data.risk_level === "HIGH") color = "red"
-        if(data.risk_level === "MEDIUM") color = "orange"
-
-        L.circleMarker([lt, ln], {color: color})
-         .addTo(map)
-         .bindPopup(`Amount: ${t.amount}`)
-    })
-
-}else{
-    document.getElementById("map").innerHTML = "No location data"
-}
-</script>
+<script src="js/result.js"></script>
 </body>
 </html>
