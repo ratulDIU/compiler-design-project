@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics Report | ATM Shield</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="index.html">ATM Shield</a>
+        <nav class="top-actions">
+            <a class="btn btn-secondary" href="result.html">Back to Result</a>
+            <a class="btn btn-secondary" href="dashboard.html">New Analysis</a>
+            <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
+        </nav>
+    </header>
+
+    <main class="analytics-page">
+        <section class="analytics-hero">
+            <div>
+                <p class="eyebrow">Visual Analytics</p>
+                <h1>Fraud pattern report</h1>
+                <p id="analyticsSummary">Charts and insights from the latest ATM fraud analysis.</p>
+            </div>
+            <div class="analytics-score-card">
+                <p class="eyebrow">Current Risk</p>
+                <strong id="riskScoreValue">0</strong>
+                <span id="riskLevelValue">LOW</span>
+            </div>
+        </section>
+
+        <section id="analyticsContent" class="analytics-layout"></section>
+    </main>
+</div>
+<script src="js/analytics.js"></script>
+</body>
+</html>

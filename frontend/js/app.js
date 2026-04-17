@@ -113,6 +113,11 @@ async function analyzeFraud(payload){
         body: JSON.stringify(payload)
     })
 
+    if(!res.ok){
+        const message = await res.text()
+        throw new Error(message || "Backend server error")
+    }
+
     return await res.json()
 }
 
@@ -206,6 +211,6 @@ form.addEventListener("submit", async function(e){
         window.location.href = "result.html"
     }catch(err){
         console.error(err)
-        setNotice("Backend connection failed.")
+        setNotice(`Backend error: ${err.message}`)
     }
 })

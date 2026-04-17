@@ -45,7 +45,7 @@ def get_last_transaction(account):
     FROM transactions 
     WHERE account=? 
     ORDER BY id DESC LIMIT 1
-    """)
+    """, (account,))
 
     row = cursor.fetchone()
     conn.close()
