@@ -1,475 +1,326 @@
-const data = JSON.parse(localStorage.getItem("fraudResult"))
-const resultEl = document.getElementById("result")
-const titleEl = document.getElementById("resultTitle")
-const summaryEl = document.getElementById("resultSummary")
-const logoutBtn = document.getElementById("logoutBtn")
-const locationCache = new Map()
+const resultData = JSON.parse(localStorage.getItem("fraudResult") || "null");
+let countdownTimer = null;
 
-function logout(){
-    localStorage.removeItem("loggedInUsername")
-    localStorage.removeItem("loggedInAccount")
-    localStorage.removeItem("loggedInEmail")
-    localStorage.removeItem("fraudResult")
-    window.location.href = "login.html"
+function safeValue(value, fallback = "N/A") {
+  return value === undefined || value === null || value === "" ? fallback : value;
 }
 
-function riskClass(status, level){
-    if(status === "BLOCKED" || level === "HIGH") return "danger"
-    if(status === "TEMP_BLOCK" || level === "MEDIUM") return "warning"
-    return "success"
+function safeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function safeValue(value, fallback = "N/A"){
-    return value === undefined || value === null || value === "" ? fallback : value
+function parseDate(value) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function parseCoordinates(location){
-    if(!location || !location.includes(",")) return null
-
-    const parts = location.split(",").map(part => parseFloat(part.trim()))
-    const lat = parts[0]
-    const lon = parts[1]
-
-    if(Number.isNaN(lat) || Number.isNaN(lon)) return null
-    return {lat, lon}
+function formatRemaining(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
 }
 
-async function getLocationName(location){
-    const coordinates = parseCoordinates(location)
-    if(!coordinates) return location
+function formatBlockUntil(value) {
+  const date = parseDate(value);
+  if (!date) return safeValue(value, "a later review");
 
-    const cacheKey = `${coordinates.lat},${coordinates.lon}`
-    if(locationCache.has(cacheKey)) return locationCache.get(cacheKey)
-
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coordinates.lat}&lon=${coordinates.lon}`
-    const res = await fetch(url)
-
-    if(!res.ok) throw new Error("Location lookup failed")
-
-    const place = await res.json()
-    const name = place.display_name || location
-    locationCache.set(cacheKey, name)
-    return name
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(date);
 }
 
-async function hydrateLocationNames(transactions){
-    if(!transactions) return
+function blockCountdownText(value) {
+  const date = parseDate(value);
+  if (!date) {
+    return {
+      label: "Temporary block is active.",
+      countdown: null
+    };
+  }
 
-    for(let i = 0; i < transactions.length; i++){
-        const locationEl = document.getElementById(`locationName${i}`)
-        if(!locationEl) continue
+  const remaining = date.getTime() - Date.now();
 
-        try{
-            locationEl.textContent = await getLocationName(transactions[i].location)
-        }catch(err){
-            locationEl.textContent = transactions[i].location
-        }
+  if (remaining <= 0) {
+    return {
+      label: "Temporary block window has ended. Refresh to re-check account status.",
+      countdown: "00h 00m 00s"
+    };
+  }
+
+  return {
+    label: `Temporary block lifts on ${formatBlockUntil(value)}.`,
+    countdown: formatRemaining(remaining)
+  };
+}
+
+function requireResult() {
+  if (!localStorage.getItem("loggedInUsername")) {
+    window.location.href = "login.html";
+    return null;
+  }
+
+  if (!resultData) {
+    document.getElementById("resultTitle").textContent = "No analysis found";
+    document.getElementById("resultSummary").textContent = "Run an analysis from the analyzer page to view a result.";
+    document.getElementById("resultMetrics").innerHTML = "";
+    document.getElementById("resultEvidence").innerHTML = '<div class="evidence-item"><div class="evidence-marker warn">!</div><div><div class="evidence-title">No fraud result saved</div><div class="evidence-desc">Open the analyzer, submit transactions, and return here.</div></div></div>';
+    return null;
+  }
+
+  return resultData;
+}
+
+function actionTone(data) {
+  if (data.status === "BLOCKED" || data.risk_level === "HIGH") return "danger";
+  if (data.status === "TEMP_BLOCK" || data.risk_level === "MEDIUM") return "warning";
+  return "success";
+}
+
+function formatAction(action) {
+  return safeValue(action, "SAFE").replaceAll("_", " ");
+}
+
+function transactions(data) {
+  return data.transactions || [];
+}
+
+function setGauge(elementId, score) {
+  const gauge = document.getElementById(elementId);
+  if (!gauge) return;
+  const radius = 78;
+  const circumference = 2 * Math.PI * radius;
+  const normalized = Math.max(0, Math.min(100, safeNumber(score) * 8));
+  gauge.style.strokeDasharray = `${(normalized / 100) * circumference} ${circumference}`;
+}
+
+function evidenceItems(data) {
+  const items = [];
+  const txns = transactions(data);
+  const totalAmount = safeNumber(data.total_amount);
+
+  if ((data.distance_km || 0) > 100 && (data.time_diff_min || 0) < 10) {
+    items.push({
+      title: "Geo-velocity violation",
+      desc: `${safeNumber(data.distance_km).toFixed(2)} km jump in ${safeNumber(data.time_diff_min).toFixed(2)} minutes.`,
+      tone: "danger"
+    });
+  }
+
+  if (new Set(txns.map((item) => item.location)).size > 1) {
+    items.push({
+      title: "Multiple locations detected",
+      desc: `${new Set(txns.map((item) => item.location)).size} unique withdrawal locations were used in one case.`,
+      tone: "danger"
+    });
+  }
+
+  if (txns.length >= 3) {
+    items.push({
+      title: "Velocity spike",
+      desc: `${txns.length} transactions were recorded inside the same review window.`,
+      tone: "danger"
+    });
+  }
+
+  if (totalAmount > 40000) {
+    items.push({
+      title: "Amount escalation",
+      desc: `Total withdrawal amount reached ${totalAmount.toLocaleString()}, above the normal review threshold.`,
+      tone: "warn"
+    });
+  }
+
+  if (data.status === "TEMP_BLOCK") {
+    const countdown = blockCountdownText(data.block_until);
+    items.push({
+      title: "Temporary protective action",
+      desc: countdown.countdown
+        ? `${countdown.label} Time remaining: ${countdown.countdown}.`
+        : countdown.label,
+      tone: "warn"
+    });
+  }
+
+  if (items.length === 0) {
+    items.push({
+      title: "Low-risk pattern",
+      desc: safeValue(data.message, "The latest case did not trigger a blocking rule."),
+      tone: "warn"
+    });
+  }
+
+  return items;
+}
+
+function renderMetrics(data) {
+  const txns = transactions(data);
+  const metrics = [
+    {label: "Account", value: `#${safeValue(data.account)}`},
+    {label: "Total Amount", value: safeNumber(data.total_amount).toLocaleString()},
+    {label: "Transactions", value: String(data.withdraw_count || txns.length)},
+    {
+      label: data.status === "TEMP_BLOCK" ? "Block Timer" : "Window",
+      value: data.status === "TEMP_BLOCK"
+        ? `<span id="blockCountdown">${blockCountdownText(data.block_until).countdown || "Pending"}</span>`
+        : (data.time_diff_min ? `${safeNumber(data.time_diff_min).toFixed(0)}m` : (txns.length > 1 ? "Multi-step" : "Single"))
     }
+  ];
+
+  document.getElementById("resultMetrics").innerHTML = metrics.map((metric) => `
+    <article class="metric-card">
+      <div class="metric-label">${metric.label}</div>
+      <div class="metric-value">${metric.value}</div>
+    </article>
+  `).join("");
 }
 
-function renderEmpty(){
-    titleEl.textContent = "No Result Found"
-    summaryEl.textContent = "Run a transaction analysis to generate a result."
-    resultEl.innerHTML = `
-        <article class="result-card">
-            <h2>No analysis data</h2>
-            <p>Start a new analysis from the dashboard.</p>
-            <a class="btn btn-primary" href="dashboard.html">Go to Dashboard</a>
-        </article>
-    `
-}
+function startBlockCountdown(data) {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
 
-function renderTransactions(transactions){
-    if(!transactions || transactions.length === 0){
-        return `<p class="muted">No transaction details were saved.</p>`
+  if (data.status !== "TEMP_BLOCK" || !data.block_until) return;
+
+  const countdownEl = document.getElementById("blockCountdown");
+  const summaryEl = document.getElementById("resultSummary");
+  const evidenceDescEl = document.querySelector("[data-temp-block-desc='true']");
+
+  function updateCountdown() {
+    const countdown = blockCountdownText(data.block_until);
+
+    if (countdownEl && countdown.countdown) {
+      countdownEl.textContent = countdown.countdown;
     }
+
+    if (summaryEl) {
+      summaryEl.textContent = countdown.countdown
+        ? `${safeValue(data.message, "Temporary block applied.")} Time remaining: ${countdown.countdown}.`
+        : countdown.label;
+    }
+
+    if (evidenceDescEl) {
+      evidenceDescEl.textContent = countdown.countdown
+        ? `${countdown.label} Time remaining: ${countdown.countdown}.`
+        : countdown.label;
+    }
+
+    if (countdown.countdown === "00h 00m 00s") {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+  }
+
+  updateCountdown();
+  countdownTimer = setInterval(updateCountdown, 1000);
+}
+
+function renderEvidence(data) {
+  const container = document.getElementById("resultEvidence");
+  container.innerHTML = evidenceItems(data).map((item) => `
+    <div class="evidence-item">
+      <div class="evidence-marker ${item.tone === "warn" ? "warn" : ""}">${item.tone === "warn" ? "!" : "!"}</div>
+      <div>
+        <div class="evidence-title">${item.title}</div>
+        <div class="evidence-desc" ${item.title === "Temporary protective action" ? 'data-temp-block-desc="true"' : ""}>${item.desc}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderTransactions(data) {
+  const tbody = document.getElementById("resultTransactions");
+  const txns = transactions(data);
+  const score = safeNumber(data.risk_score);
+
+  if (txns.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5">No transactions stored for this case.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = txns.map((item, index) => {
+    const risk = Math.min(96, Math.max(18, score * 8 - index * 4));
+    const riskClass = risk >= 70 ? "" : risk >= 35 ? "review" : "safe";
 
     return `
-        <div class="transaction-table">
-            ${transactions.map((item, index) => `
-                <div class="table-row">
-                    <span>${index + 1}</span>
-                    <strong>${safeValue(item.amount)}</strong>
-                    <em id="locationName${index}">${parseCoordinates(item.location) ? "Finding location name..." : safeValue(item.location)}</em>
-                    ${item.label ? `<small>${item.label}</small>` : ""}
-                </div>
-            `).join("")}
-        </div>
-    `
+      <tr>
+        <td class="mono">T-${index + 1}</td>
+        <td>${safeValue(item.location, "Unknown location")}</td>
+        <td class="mono">${safeValue(item.timestamp, "Recent")}</td>
+        <td class="mono">${safeNumber(item.amount).toLocaleString()}</td>
+        <td>
+          <span class="risk-meter">
+            <span class="risk-bar ${riskClass}"><span style="width:${risk}%"></span></span>
+            <strong>${risk}</strong>
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
-function renderMap(transactions){
-    const mapEl = document.getElementById("resultMap")
-    const mapNotice = document.getElementById("mapNotice")
-    if(!mapEl || !mapNotice) return
+function renderChart(data) {
+  const txns = transactions(data);
 
-    const points = (transactions || [])
-        .map(item => {
-            const coordinates = parseCoordinates(item.location)
-            if(!coordinates) return null
-
-            return {
-                ...coordinates,
-                amount: item.amount,
-                label: item.label
-            }
-        })
-        .filter(point => point && Number.isFinite(point.lat) && Number.isFinite(point.lon))
-
-    if(points.length === 0){
-        mapNotice.textContent = "No coordinate-based locations were submitted."
-        return
-    }
-
-    if(typeof L === "undefined"){
-        mapNotice.textContent = "Map library could not load. Location names are still shown above."
-        return
-    }
-
-    const map = L.map("resultMap").setView([points[0].lat, points[0].lon], 12)
-
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-        attribution: "OpenStreetMap, CARTO"
-    }).addTo(map)
-
-    const bounds = []
-
-    points.forEach((point, index) => {
-        const latLng = [point.lat, point.lon]
-        bounds.push(latLng)
-
-        L.marker(latLng)
-            .addTo(map)
-            .bindPopup(`${safeValue(point.label, `Transaction ${index + 1}`)}<br>Amount: ${safeValue(point.amount)}`)
-    })
-
-    if(bounds.length > 1){
-        map.fitBounds(bounds, {padding: [30, 30]})
-    }
-
-    mapNotice.textContent = "Map shows submitted transaction locations."
+  new ApexCharts(document.querySelector("#resultBarChart"), {
+    chart: {type: "bar", height: 420, toolbar: {show: false}, fontFamily: "Inter"},
+    series: [{name: "Withdrawal", data: txns.map((item) => safeNumber(item.amount))}],
+    colors: ["#ef3f33"],
+    fill: {
+      type: "gradient",
+      gradient: {shade: "light", type: "vertical", shadeIntensity: 0.6, gradientToColors: ["#f9b236"], opacityFrom: 1, opacityTo: 1}
+    },
+    plotOptions: {bar: {borderRadius: 12, columnWidth: "56%"}},
+    dataLabels: {enabled: false},
+    xaxis: {categories: txns.map((item) => safeValue(item.location, "Txn")), labels: {style: {colors: "#62756c"}}},
+    yaxis: {labels: {style: {colors: "#62756c"}}},
+    grid: {borderColor: "#d9e7dc", strokeDashArray: 5}
+  }).render();
 }
 
-function renderBlockedGuidance(){
-    if(data.status !== "BLOCKED") return ""
+function renderResult() {
+  const data = requireResult();
+  if (!data) return;
 
-    return `
-        <article class="result-card wide-card blocked-guidance">
-            <div>
-                <p class="eyebrow">Permanent Block Notice</p>
-                <h2>Why this account is blocked</h2>
-                <p>This account is permanently blocked because the fraud engine detected a high-risk ATM pattern. This can happen after repeated withdrawals, high total withdrawal amount, location changes, or very short time between transactions.</p>
-            </div>
-            <div class="contact-steps">
-                <h3>What to do now</h3>
-                <ul>
-                    <li>Do not retry ATM withdrawals with this account.</li>
-                    <li>Contact your nearest bank branch or card support desk.</li>
-                    <li>Bring your account number, valid ID, and recent transaction details.</li>
-                </ul>
-                <a class="btn btn-primary" href="analytics.html">View Previous Record</a>
-            </div>
-        </article>
-    `
+  const tone = actionTone(data);
+  const banner = document.getElementById("resultBanner");
+  banner.className = `verdict-banner ${tone}`;
+
+  const title = data.status === "BLOCKED"
+    ? `High-risk pattern detected on account #${safeValue(data.account)}`
+    : data.status === "TEMP_BLOCK"
+      ? `Suspicious activity detected on account #${safeValue(data.account)}`
+      : `Low-risk pattern confirmed for account #${safeValue(data.account)}`;
+
+  document.getElementById("resultTitle").textContent = title;
+  document.getElementById("resultSummary").textContent = safeValue(data.message, "Latest analysis completed.");
+  document.getElementById("riskValue").textContent = safeNumber(data.risk_score);
+  document.getElementById("riskLevel").textContent = safeValue(data.risk_level, "LOW");
+  document.getElementById("verdictAction").textContent = formatAction(data.action);
+
+  const promo = document.getElementById("verdictPromo");
+  promo.style.borderColor = tone === "danger" ? "rgba(236,63,51,0.18)" : tone === "warning" ? "rgba(224,175,41,0.22)" : "rgba(5,129,75,0.18)";
+  promo.style.background = tone === "danger" ? "rgba(255,234,232,0.76)" : tone === "warning" ? "rgba(255,244,214,0.88)" : "rgba(223,244,231,0.9)";
+
+  setGauge("resultGauge", safeNumber(data.risk_score));
+  renderMetrics(data);
+  renderEvidence(data);
+  renderTransactions(data);
+  renderChart(data);
+  startBlockCountdown(data);
 }
 
-function totalTransactionAmount(transactions){
-    return (transactions || []).reduce((sum, item) => sum + Number(item.amount || 0), 0)
-}
+document.getElementById("downloadResultBtn").addEventListener("click", function() {
+  window.print();
+});
 
-function drawBarChart(canvas, transactions){
-    if(!canvas || !transactions || transactions.length === 0) return
-
-    const ctx = canvas.getContext("2d")
-    const width = canvas.width
-    const height = canvas.height
-    const padding = 36
-    const maxAmount = Math.max(...transactions.map(item => Number(item.amount || 0)), 1)
-    const barGap = 14
-    const barWidth = (width - padding * 2 - barGap * (transactions.length - 1)) / transactions.length
-
-    ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = "#fbfdfc"
-    ctx.fillRect(0, 0, width, height)
-
-    ctx.strokeStyle = "#dce5df"
-    ctx.beginPath()
-    ctx.moveTo(padding, height - padding)
-    ctx.lineTo(width - padding, height - padding)
-    ctx.stroke()
-
-    transactions.forEach((item, index) => {
-        const amount = Number(item.amount || 0)
-        const barHeight = (amount / maxAmount) * (height - padding * 2)
-        const x = padding + index * (barWidth + barGap)
-        const y = height - padding - barHeight
-
-        ctx.fillStyle = "#117a4f"
-        ctx.fillRect(x, y, barWidth, barHeight)
-
-        ctx.fillStyle = "#17211c"
-        ctx.font = "700 13px Arial"
-        ctx.textAlign = "center"
-        ctx.fillText(amount, x + barWidth / 2, y - 8)
-
-        ctx.fillStyle = "#64716a"
-        ctx.font = "700 12px Arial"
-        ctx.fillText(`T${index + 1}`, x + barWidth / 2, height - 12)
-    })
-}
-
-function drawPieChart(canvas, transactions){
-    if(!canvas || !transactions || transactions.length === 0) return
-
-    const ctx = canvas.getContext("2d")
-    const width = canvas.width
-    const height = canvas.height
-    const centerX = width / 2
-    const centerY = height / 2
-    const radius = Math.min(width, height) / 2 - 30
-    const total = totalTransactionAmount(transactions) || 1
-    const colors = ["#117a4f", "#0f766e", "#b7791f", "#c2413b", "#375a48"]
-    let startAngle = -Math.PI / 2
-
-    ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = "#fbfdfc"
-    ctx.fillRect(0, 0, width, height)
-
-    transactions.forEach((item, index) => {
-        const amount = Number(item.amount || 0)
-        const slice = (amount / total) * Math.PI * 2
-
-        ctx.beginPath()
-        ctx.moveTo(centerX, centerY)
-        ctx.arc(centerX, centerY, radius, startAngle, startAngle + slice)
-        ctx.closePath()
-        ctx.fillStyle = colors[index % colors.length]
-        ctx.fill()
-
-        startAngle += slice
-    })
-
-    ctx.fillStyle = "#17211c"
-    ctx.font = "800 18px Arial"
-    ctx.textAlign = "center"
-    ctx.fillText("Amount Share", centerX, centerY - 4)
-
-    ctx.fillStyle = "#64716a"
-    ctx.font = "700 13px Arial"
-    ctx.fillText(`Total ${total}`, centerX, centerY + 18)
-}
-
-function drawRiskGauge(canvas, score){
-    if(!canvas) return
-
-    const ctx = canvas.getContext("2d")
-    const width = canvas.width
-    const height = canvas.height
-    const centerX = width / 2
-    const centerY = height - 28
-    const radius = Math.min(width, height * 2) / 2 - 32
-    const numericScore = Number(score || 0)
-    const maxScore = 11
-    const endAngle = Math.PI + (Math.min(numericScore, maxScore) / maxScore) * Math.PI
-
-    ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = "#fbfdfc"
-    ctx.fillRect(0, 0, width, height)
-
-    ctx.lineWidth = 18
-    ctx.lineCap = "round"
-
-    ctx.strokeStyle = "#dce5df"
-    ctx.beginPath()
-    ctx.arc(centerX, centerY, radius, Math.PI, Math.PI * 2)
-    ctx.stroke()
-
-    ctx.strokeStyle = numericScore > 6 ? "#c2413b" : numericScore > 3 ? "#b7791f" : "#117a4f"
-    ctx.beginPath()
-    ctx.arc(centerX, centerY, radius, Math.PI, endAngle)
-    ctx.stroke()
-
-    ctx.fillStyle = "#17211c"
-    ctx.font = "800 34px Arial"
-    ctx.textAlign = "center"
-    ctx.fillText(numericScore, centerX, centerY - 28)
-
-    ctx.fillStyle = "#64716a"
-    ctx.font = "700 13px Arial"
-    ctx.fillText("Risk Score", centerX, centerY - 4)
-}
-
-function renderAnalytics(){
-    const analyticsPanel = document.getElementById("analyticsPanel")
-    const analyticsToggle = document.getElementById("analyticsToggle")
-    if(!analyticsPanel || !analyticsToggle) return
-
-    let hasDrawn = false
-
-    analyticsToggle.addEventListener("click", () => {
-        const isHidden = analyticsPanel.classList.toggle("hidden")
-        analyticsToggle.textContent = isHidden ? "Show Analytics" : "Hide Analytics"
-
-        if(!isHidden && !hasDrawn){
-            drawBarChart(document.getElementById("amountBarChart"), data.transactions)
-            drawPieChart(document.getElementById("amountPieChart"), data.transactions)
-            drawRiskGauge(document.getElementById("riskGaugeChart"), data.risk_score)
-            hasDrawn = true
-        }
-    })
-}
-
-function startBlockTimer(){
-    const timer = document.getElementById("blockTimer")
-    if(!timer || !data.block_until) return
-
-    const endTime = new Date(data.block_until)
-    let timerId = null
-
-    function formatPart(value){
-        return String(Math.max(0, value)).padStart(2, "0")
-    }
-
-    function update(){
-        const diff = endTime - new Date()
-
-        if(diff <= 0){
-            timer.innerHTML = `
-                <div class="countdown-expired">Block expired. Try a new analysis.</div>
-            `
-            if(timerId){
-                clearInterval(timerId)
-            }
-            return
-        }
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-
-        timer.innerHTML = `
-            <div class="countdown-grid">
-                <div class="countdown-box">
-                    <strong>${formatPart(days)}</strong>
-                    <span>Days</span>
-                </div>
-                <div class="countdown-box">
-                    <strong>${formatPart(hours)}</strong>
-                    <span>Hours</span>
-                </div>
-                <div class="countdown-box">
-                    <strong>${formatPart(minutes)}</strong>
-                    <span>Minutes</span>
-                </div>
-                <div class="countdown-box">
-                    <strong>${formatPart(seconds)}</strong>
-                    <span>Seconds</span>
-                </div>
-            </div>
-        `
-    }
-
-    update()
-    timerId = setInterval(update, 1000)
-}
-
-function renderResult(){
-    if(!data){
-        renderEmpty()
-        return
-    }
-
-    const level = data.risk_level || data.status || "ACTIVE"
-    const statusClass = riskClass(data.status, data.risk_level)
-
-    if(data.status === "BLOCKED"){
-        titleEl.textContent = "Account Permanently Blocked"
-        summaryEl.textContent = "Suspicious activity crossed the highest risk threshold."
-    }else if(data.status === "TEMP_BLOCK"){
-        titleEl.textContent = "Temporary Block Applied"
-        summaryEl.textContent = "The account is restricted while suspicious activity cools down."
-    }else{
-        titleEl.textContent = "Account Safe and Active"
-        summaryEl.textContent = "The transaction pattern looks normal and no block was applied."
-    }
-
-    resultEl.innerHTML = `
-        <article class="result-card status-card ${statusClass}">
-            <p class="eyebrow">Status</p>
-            <h2>${safeValue(data.status, "ACTIVE")}</h2>
-            <p>${safeValue(data.message, "Analysis completed.")}</p>
-            ${data.block_until ? `
-                <div class="timer-panel">
-                    <p class="timer-label">Block countdown</p>
-                    <div id="blockTimer" class="timer-text"></div>
-                </div>
-            ` : ""}
-        </article>
-
-        <article class="result-card">
-            <p class="eyebrow">Account</p>
-            <h2>${safeValue(data.account)}</h2>
-            <dl class="metric-list">
-                <div>
-                    <dt>Risk Level</dt>
-                    <dd>${safeValue(data.risk_level, level)}</dd>
-                </div>
-                <div>
-                    <dt>Risk Score</dt>
-                    <dd>${safeValue(data.risk_score, "0")}</dd>
-                </div>
-                <div>
-                    <dt>Result</dt>
-                    <dd>${safeValue(data.action, "SAFE")}</dd>
-                </div>
-                <div>
-                    <dt>Total Amount</dt>
-                    <dd>${safeValue(data.total_amount, "0")}</dd>
-                </div>
-            </dl>
-        </article>
-
-        ${renderBlockedGuidance()}
-
-        <article id="previousRecordSection" class="result-card wide-card">
-            <div class="transaction-header">
-                <div>
-                    <p class="eyebrow">${data.status === "BLOCKED" ? "Previous Record" : "Transactions"}</p>
-                    <h2>${data.status === "BLOCKED" ? "Last Known Transaction" : "Submitted Withdrawals"}</h2>
-                </div>
-            </div>
-            ${renderTransactions(data.transactions)}
-        </article>
-
-        <article class="result-card wide-card">
-            <div class="transaction-header">
-                <div>
-                    <p class="eyebrow">Map Visualization</p>
-                    <h2>Transaction Locations</h2>
-                </div>
-            </div>
-            <div id="resultMap" class="result-map"></div>
-            <p id="mapNotice" class="muted map-notice"></p>
-        </article>
-
-        <article class="result-card wide-card analytics-cta">
-            <div class="transaction-header">
-                <div>
-                    <p class="eyebrow">Analytics</p>
-                    <h2>Want deeper visual analysis?</h2>
-                    <p>Open a dedicated analytics report with charts for amount patterns, risk score, and transaction distribution.</p>
-                </div>
-                <a class="btn btn-primary" href="analytics.html">Open Analytics</a>
-            </div>
-        </article>
-    `
-
-    startBlockTimer()
-    hydrateLocationNames(data.transactions)
-    renderMap(data.transactions)
-
-}
-
-logoutBtn.addEventListener("click", logout)
-renderResult()
+renderResult();

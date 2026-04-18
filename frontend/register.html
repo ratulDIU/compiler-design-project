@@ -9,11 +9,21 @@
 <body>
 <main class="auth-page">
     <section class="auth-visual">
-        <img src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=900&q=80" alt="Secure digital banking screen">
+        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1200&q=80" alt="Professional digital banking interface">
         <div class="auth-visual-copy">
             <p class="eyebrow">ATM Shield</p>
-            <h1>Protect every withdrawal before it becomes a problem.</h1>
-            <p>Register your account, verify your OTP, and monitor suspicious transaction patterns in one secure workflow.</p>
+            <h1>Protect every withdrawal before it turns into account risk.</h1>
+            <p>Create a user profile, verify access through OTP, and move into a cleaner fraud-monitoring workflow.</p>
+            <div class="auth-highlights">
+                <article>
+                    <strong>OTP Verification</strong>
+                    <span>Email confirmation activates secure login access.</span>
+                </article>
+                <article>
+                    <strong>Account Matching</strong>
+                    <span>Analysis is restricted to the account registered by the user.</span>
+                </article>
+            </div>
         </div>
     </section>
 
@@ -22,43 +32,46 @@
             <a class="brand" href="index.html">ATM Shield</a>
             <a class="btn btn-secondary" href="index.html">Home</a>
         </div>
-        <div class="section-heading">
-            <p class="eyebrow">New User</p>
-            <h2>Create your account</h2>
-            <p>Use the account number connected to your ATM card.</p>
+        <div class="auth-panel-shell">
+            <p class="auth-caption">Create your secure access</p>
+            <div class="section-heading">
+                <p class="eyebrow">New User</p>
+                <h2>Create your account</h2>
+                <p>Use the same account number connected to your ATM card and registered email.</p>
+            </div>
+
+            <form id="registerForm" class="form-stack">
+                <label>
+                    <span>User Name</span>
+                    <input id="username" type="text" autocomplete="username" placeholder="Enter user name">
+                </label>
+
+                <label>
+                    <span>Account Number</span>
+                    <input id="account_number" type="text" inputmode="numeric" placeholder="Enter account number">
+                </label>
+
+                <label>
+                    <span>Email</span>
+                    <input id="email" type="email" autocomplete="email" placeholder="Enter email address">
+                </label>
+
+                <label>
+                    <span>New Password</span>
+                    <input id="pass" type="password" autocomplete="new-password" placeholder="Create password">
+                </label>
+
+                <label>
+                    <span>Confirm Password</span>
+                    <input id="confirm_pass" type="password" autocomplete="new-password" placeholder="Confirm password">
+                </label>
+
+                <p id="notice" class="notice" role="status"></p>
+                <button class="btn btn-primary" type="submit">Send OTP</button>
+            </form>
+
+            <p class="auth-link">Already registered? <a href="login.html">Sign in</a></p>
         </div>
-
-        <form id="registerForm" class="form-stack">
-            <label>
-                <span>User Name</span>
-                <input id="username" type="text" autocomplete="username" placeholder="Enter user name">
-            </label>
-
-            <label>
-                <span>Account Number</span>
-                <input id="account_number" type="text" inputmode="numeric" placeholder="Enter account number">
-            </label>
-
-            <label>
-                <span>Email</span>
-                <input id="email" type="email" autocomplete="email" placeholder="Enter email address">
-            </label>
-
-            <label>
-                <span>New Password</span>
-                <input id="pass" type="password" autocomplete="new-password" placeholder="Create password">
-            </label>
-
-            <label>
-                <span>Confirm Password</span>
-                <input id="confirm_pass" type="password" autocomplete="new-password" placeholder="Confirm password">
-            </label>
-
-            <p id="notice" class="notice" role="status"></p>
-            <button class="btn btn-primary" type="submit">Send OTP</button>
-        </form>
-
-        <p class="auth-link">Already registered? <a href="login.html">Sign in</a></p>
     </section>
 </main>
 <script src="js/auth.js"></script>

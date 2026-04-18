@@ -1,38 +1,108 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fraud Result | ATM Shield</title>
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Result | ATM Shield</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </head>
-<body>
-<div class="app-shell">
-    <header class="topbar">
-        <a class="brand" href="index.html">ATM Shield</a>
-        <nav class="top-actions">
-            <a class="btn btn-secondary" href="index.html">Home</a>
-            <a class="btn btn-secondary" href="dashboard.html">New Analysis</a>
-            <a class="btn btn-secondary" href="profile.html">Profile</a>
-            <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
-        </nav>
-    </header>
+<body class="bg-mesh">
+<script src="js/shell.js"></script>
+<script>renderShell('result');</script>
 
-    <main class="result-page">
-        <section class="result-hero">
-            <div>
-                <p class="eyebrow">Analysis Result</p>
-                <h1 id="resultTitle">Fraud Result</h1>
-                <p id="resultSummary">Review the account status and recommended action.</p>
-            </div>
-            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=700&q=80" alt="Financial analytics charts">
-        </section>
+<main class="container page">
+  <section class="verdict-hero">
+    <article id="resultBanner" class="verdict-banner danger">
+      <div class="page-eyebrow">Analysis Result</div>
+      <h1 id="resultTitle" class="verdict-title">Withdrawal analysis result</h1>
+      <p id="resultSummary" class="verdict-summary">Review the latest verdict, evidence, and submitted transactions.</p>
+      <div class="verdict-actions">
+        <button id="downloadResultBtn" class="btn btn-light btn-lg" type="button">Download PDF</button>
+        <a href="analytics.html" class="btn btn-glass btn-lg">Open Analytics</a>
+      </div>
+    </article>
 
-        <section id="result" class="result-grid"></section>
-    </main>
-</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <aside class="verdict-card verdict-score-shell">
+      <div>
+        <div class="page-eyebrow">Risk Score</div>
+        <h2 class="card-title">Composite Index</h2>
+      </div>
+      <div class="score-gauge" style="margin-top:0.5rem;">
+        <svg viewBox="0 0 220 220" aria-hidden="true">
+          <defs>
+            <linearGradient id="resultGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#ef332c"></stop>
+              <stop offset="100%" stop-color="#ff8c33"></stop>
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="110" cy="110" r="78"></circle>
+          <circle id="resultGauge" class="fill" cx="110" cy="110" r="78" style="stroke:url(#resultGaugeGradient)"></circle>
+        </svg>
+        <div class="score-gauge-text">
+          <div>
+            <strong id="riskValue">0</strong>
+            <span id="riskLevel">Low Risk</span>
+          </div>
+        </div>
+      </div>
+      <div id="verdictPromo" class="verdict-promo">
+        <div class="page-eyebrow" style="color:var(--danger);">Verdict</div>
+        <h3 id="verdictAction">SAFE</h3>
+      </div>
+    </aside>
+  </section>
+
+  <section id="resultMetrics" class="verdict-kpis section"></section>
+
+  <section class="split-grid section">
+    <article class="card">
+      <div class="card-header">
+        <div>
+          <div class="page-eyebrow">Pattern</div>
+          <h2 class="card-title">Withdrawal Sequence</h2>
+          <p class="card-desc">Submitted amounts mapped across the latest saved locations.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="resultBarChart" class="chart-shell tall"></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-header">
+        <div>
+          <div class="page-eyebrow">Evidence</div>
+          <h2 class="card-title">Why we blocked</h2>
+          <p class="card-desc">Signals contributing to the latest decision.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="resultEvidence" class="evidence-stack"></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="card section">
+    <div class="card-header">
+      <div>
+        <div class="page-eyebrow">Transactions</div>
+        <h2 class="card-title">Submitted Withdrawals</h2>
+        <p class="card-desc">The full transaction set stored with the latest case.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>ID</th><th>City</th><th>Time</th><th>Amount</th><th>Risk</th></tr></thead>
+        <tbody id="resultTransactions"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
 <script src="js/result.js"></script>
 </body>
 </html>

@@ -9,11 +9,21 @@
 <body>
 <main class="auth-page compact-auth">
     <section class="auth-visual">
-        <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=900&q=80" alt="Financial security workspace">
+        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Professional fraud monitoring workspace">
         <div class="auth-visual-copy">
             <p class="eyebrow">Secure Login</p>
-            <h1>Review fraud signals with your verified account.</h1>
-            <p>Sign in with your user name and password to analyze transaction behavior.</p>
+            <h1>Review fraud signals from one professional control space.</h1>
+            <p>Sign in with your verified account to analyze withdrawal activity, view reports, and monitor account status.</p>
+            <div class="auth-highlights">
+                <article>
+                    <strong>Verified Access</strong>
+                    <span>Only confirmed accounts can open the dashboard.</span>
+                </article>
+                <article>
+                    <strong>Clear Decisions</strong>
+                    <span>See risk score, status, analytics, and account action together.</span>
+                </article>
+            </div>
         </div>
     </section>
 
@@ -22,28 +32,31 @@
             <a class="brand" href="index.html">ATM Shield</a>
             <a class="btn btn-secondary" href="index.html">Home</a>
         </div>
-        <div class="section-heading">
-            <p class="eyebrow">Welcome Back</p>
-            <h2>Sign in</h2>
-            <p>Only verified users can submit transaction checks.</p>
+        <div class="auth-panel-shell">
+            <p class="auth-caption">Secure session access</p>
+            <div class="section-heading">
+                <p class="eyebrow">Welcome Back</p>
+                <h2>Sign in</h2>
+                <p>Only verified users can submit transaction checks and access account reporting.</p>
+            </div>
+
+            <form id="loginForm" class="form-stack">
+                <label>
+                    <span>User Name</span>
+                    <input id="username" type="text" autocomplete="username" placeholder="Enter user name">
+                </label>
+
+                <label>
+                    <span>Password</span>
+                    <input id="pass" type="password" autocomplete="current-password" placeholder="Enter password">
+                </label>
+
+                <p id="notice" class="notice" role="status"></p>
+                <button class="btn btn-primary" type="submit">Sign In</button>
+            </form>
+
+            <p class="auth-link">New to ATM Shield? <a href="register.html">Create account</a></p>
         </div>
-
-        <form id="loginForm" class="form-stack">
-            <label>
-                <span>User Name</span>
-                <input id="username" type="text" autocomplete="username" placeholder="Enter user name">
-            </label>
-
-            <label>
-                <span>Password</span>
-                <input id="pass" type="password" autocomplete="current-password" placeholder="Enter password">
-            </label>
-
-            <p id="notice" class="notice" role="status"></p>
-            <button class="btn btn-primary" type="submit">Sign In</button>
-        </form>
-
-        <p class="auth-link">New to ATM Shield? <a href="register.html">Create account</a></p>
     </section>
 </main>
 <script src="js/auth.js"></script>

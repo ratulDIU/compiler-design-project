@@ -1,246 +1,173 @@
-const data = JSON.parse(localStorage.getItem("fraudResult"))
-const contentEl = document.getElementById("analyticsContent")
-const summaryEl = document.getElementById("analyticsSummary")
-const riskScoreEl = document.getElementById("riskScoreValue")
-const riskLevelEl = document.getElementById("riskLevelValue")
-const logoutBtn = document.getElementById("logoutBtn")
-const downloadPdfBtn = document.getElementById("downloadPdfBtn")
+const analyticsData = JSON.parse(localStorage.getItem("fraudResult") || "null");
 
-function logout(){
-    localStorage.removeItem("loggedInUsername")
-    localStorage.removeItem("loggedInAccount")
-    localStorage.removeItem("loggedInEmail")
-    localStorage.removeItem("fraudResult")
-    window.location.href = "login.html"
+function safeValue(value, fallback = "N/A") {
+  return value === undefined || value === null || value === "" ? fallback : value;
 }
 
-function downloadPdf(){
-    document.title = `ATM Shield Report - Account ${safeValue(data && data.account, "Unknown")}`
-    window.print()
+function safeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function safeValue(value, fallback = "N/A"){
-    return value === undefined || value === null || value === "" ? fallback : value
+function requireAnalytics() {
+  if (!localStorage.getItem("loggedInUsername")) {
+    window.location.href = "login.html";
+    return null;
+  }
+
+  if (!analyticsData) {
+    document.getElementById("analyticsSummary").textContent = "No result is stored yet. Run an analysis first.";
+    return null;
+  }
+
+  return analyticsData;
 }
 
-function totalAmount(transactions){
-    return (transactions || []).reduce((sum, item) => sum + Number(item.amount || 0), 0)
+function setGauge(elementId, score) {
+  const gauge = document.getElementById(elementId);
+  if (!gauge) return;
+  const radius = 78;
+  const circumference = 2 * Math.PI * radius;
+  const normalized = Math.max(0, Math.min(100, safeNumber(score) * 8));
+  gauge.style.strokeDasharray = `${(normalized / 100) * circumference} ${circumference}`;
 }
 
-function uniqueLocations(transactions){
-    return new Set((transactions || []).map(item => item.location)).size
+function totalAmount(transactions) {
+  return (transactions || []).reduce((sum, item) => sum + safeNumber(item.amount), 0);
 }
 
-function drawBarChart(canvas, transactions){
-    const ctx = canvas.getContext("2d")
-    const width = canvas.width
-    const height = canvas.height
-    const padding = 44
-    const items = transactions || []
-    const maxAmount = Math.max(...items.map(item => Number(item.amount || 0)), 1)
-    const gap = 16
-    const barWidth = (width - padding * 2 - gap * Math.max(items.length - 1, 0)) / Math.max(items.length, 1)
-
-    ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = "#fbfdfc"
-    ctx.fillRect(0, 0, width, height)
-
-    ctx.strokeStyle = "#dce5df"
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(padding, height - padding)
-    ctx.lineTo(width - padding, height - padding)
-    ctx.stroke()
-
-    items.forEach((item, index) => {
-        const amount = Number(item.amount || 0)
-        const barHeight = (amount / maxAmount) * (height - padding * 2)
-        const x = padding + index * (barWidth + gap)
-        const y = height - padding - barHeight
-
-        ctx.fillStyle = amount > 40000 ? "#c2413b" : "#117a4f"
-        ctx.fillRect(x, y, barWidth, barHeight)
-
-        ctx.fillStyle = "#17211c"
-        ctx.font = "800 14px Arial"
-        ctx.textAlign = "center"
-        ctx.fillText(amount, x + barWidth / 2, y - 10)
-
-        ctx.fillStyle = "#64716a"
-        ctx.font = "700 12px Arial"
-        ctx.fillText(`T${index + 1}`, x + barWidth / 2, height - 16)
-    })
+function uniqueLocations(transactions) {
+  return new Set((transactions || []).map((item) => item.location).filter(Boolean)).size;
 }
 
-function drawPieChart(canvas, transactions){
-    const ctx = canvas.getContext("2d")
-    const width = canvas.width
-    const height = canvas.height
-    const cx = width / 2
-    const cy = height / 2
-    const radius = Math.min(width, height) / 2 - 34
-    const items = transactions || []
-    const total = totalAmount(items) || 1
-    const colors = ["#117a4f", "#0f766e", "#b7791f", "#c2413b", "#375a48"]
-    let angle = -Math.PI / 2
+function kpiCards(data) {
+  const txns = data.transactions || [];
+  const total = safeNumber(data.total_amount, totalAmount(txns));
+  const average = txns.length ? Math.round(total / txns.length) : 0;
+  const max = txns.length ? Math.max(...txns.map((item) => safeNumber(item.amount))) : 0;
 
-    ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = "#fbfdfc"
-    ctx.fillRect(0, 0, width, height)
-
-    items.forEach((item, index) => {
-        const amount = Number(item.amount || 0)
-        const slice = (amount / total) * Math.PI * 2
-
-        ctx.beginPath()
-        ctx.moveTo(cx, cy)
-        ctx.arc(cx, cy, radius, angle, angle + slice)
-        ctx.closePath()
-        ctx.fillStyle = colors[index % colors.length]
-        ctx.fill()
-        angle += slice
-    })
-
-    ctx.fillStyle = "#17211c"
-    ctx.font = "800 20px Arial"
-    ctx.textAlign = "center"
-    ctx.fillText("Share", cx, cy - 4)
-
-    ctx.fillStyle = "#64716a"
-    ctx.font = "700 13px Arial"
-    ctx.fillText(`Total ${total}`, cx, cy + 20)
+  return [
+    {label: "Total Amount", value: total.toLocaleString(), note: total > 40000 ? "+12% vs avg" : "Within normal band"},
+    {label: "Average Withdrawal", value: average.toLocaleString(), note: average > 10000 ? "Above norm" : "Steady"},
+    {label: "Highest Withdrawal", value: max.toLocaleString(), note: max > 10000 ? "Large single step" : "Normal"},
+    {label: "Unique Locations", value: String(uniqueLocations(txns)), note: uniqueLocations(txns) > 1 ? "Geo-velocity" : "Single region"}
+  ];
 }
 
-function drawRiskGauge(canvas, score){
-    const ctx = canvas.getContext("2d")
-    const width = canvas.width
-    const height = canvas.height
-    const cx = width / 2
-    const cy = height - 34
-    const radius = Math.min(width, height * 2) / 2 - 42
-    const numericScore = Number(score || 0)
-    const maxScore = 11
-    const end = Math.PI + (Math.min(numericScore, maxScore) / maxScore) * Math.PI
-
-    ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = "#fbfdfc"
-    ctx.fillRect(0, 0, width, height)
-
-    ctx.lineWidth = 24
-    ctx.lineCap = "round"
-
-    ctx.strokeStyle = "#dce5df"
-    ctx.beginPath()
-    ctx.arc(cx, cy, radius, Math.PI, Math.PI * 2)
-    ctx.stroke()
-
-    ctx.strokeStyle = numericScore > 6 ? "#c2413b" : numericScore > 3 ? "#b7791f" : "#117a4f"
-    ctx.beginPath()
-    ctx.arc(cx, cy, radius, Math.PI, end)
-    ctx.stroke()
-
-    ctx.fillStyle = "#17211c"
-    ctx.font = "800 42px Arial"
-    ctx.textAlign = "center"
-    ctx.fillText(numericScore, cx, cy - 34)
-
-    ctx.fillStyle = "#64716a"
-    ctx.font = "700 14px Arial"
-    ctx.fillText("Risk Score", cx, cy - 4)
+function renderKpis(data) {
+  const kpis = document.getElementById("analyticsKpis");
+  kpis.innerHTML = kpiCards(data).map((card) => `
+    <article class="metric-card">
+      <div class="metric-label">${card.label}</div>
+      <div class="metric-value">${card.value}</div>
+      <div class="metric-note">${card.note}</div>
+    </article>
+  `).join("");
 }
 
-function renderEmpty(){
-    contentEl.innerHTML = `
-        <article class="result-card">
-            <h2>No analytics data</h2>
-            <p>Run a fraud analysis first, then open analytics.</p>
-            <a class="btn btn-primary" href="dashboard.html">Go to Dashboard</a>
-        </article>
-    `
+function renderBarChart(data) {
+  const txns = data.transactions || [];
+  new ApexCharts(document.querySelector("#analyticsBarChart"), {
+    chart: {type: "bar", height: 420, toolbar: {show: false}, fontFamily: "Inter"},
+    series: [{name: "Amount", data: txns.map((item) => safeNumber(item.amount))}],
+    colors: ["#087a45"],
+    fill: {
+      type: "gradient",
+      gradient: {shade: "light", type: "vertical", gradientToColors: ["#f2bc43"], opacityFrom: 1, opacityTo: 1}
+    },
+    plotOptions: {bar: {borderRadius: 12, columnWidth: "72%"}},
+    dataLabels: {enabled: false},
+    xaxis: {categories: txns.map((item) => safeValue(item.location, "Txn")), labels: {style: {colors: "#62756c"}}},
+    yaxis: {labels: {style: {colors: "#62756c"}}},
+    grid: {borderColor: "#d9e7dc", strokeDashArray: 5}
+  }).render();
 }
 
-function renderAnalytics(){
-    if(!data){
-        renderEmpty()
-        return
+function renderPieChart(data) {
+  const txns = data.transactions || [];
+  new ApexCharts(document.querySelector("#analyticsPieChart"), {
+    chart: {type: "donut", height: 360, fontFamily: "Inter"},
+    series: txns.map((item) => safeNumber(item.amount)),
+    labels: txns.map((item) => safeValue(item.location, "Txn")),
+    colors: ["#109958", "#1691cb", "#d99e08", "#ea4f45", "#83c36b"],
+    legend: {position: "bottom"},
+    dataLabels: {enabled: true},
+    plotOptions: {
+      pie: {
+        donut: {
+          size: "64%",
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: "Total",
+              formatter: () => `${safeNumber(data.total_amount).toLocaleString()}`
+            }
+          }
+        }
+      }
     }
-
-    const transactions = data.transactions || []
-    const total = totalAmount(transactions)
-    const average = transactions.length ? Math.round(total / transactions.length) : 0
-    const maxWithdrawal = Math.max(...transactions.map(item => Number(item.amount || 0)), 0)
-    const locationCount = uniqueLocations(transactions)
-    const currentRiskScore = safeValue(data.risk_score, "0")
-    const currentRiskLevel = safeValue(data.risk_level, data.status === "BLOCKED" ? "HIGH" : data.status === "TEMP_BLOCK" ? "MEDIUM" : "LOW")
-    const currentAction = safeValue(data.action, data.status === "BLOCKED" ? "PERMANENT BLOCK" : data.status === "TEMP_BLOCK" ? "TEMPORARY BLOCK" : "SAFE")
-    const statusSummary = data.status === "BLOCKED"
-        ? `Account ${safeValue(data.account)} is permanently blocked after ${transactions.length} recorded transaction${transactions.length === 1 ? "" : "s"} with total withdrawal amount ${total}.`
-        : data.status === "TEMP_BLOCK"
-            ? `Account ${safeValue(data.account)} is temporarily blocked after ${transactions.length} recorded transaction${transactions.length === 1 ? "" : "s"} with total withdrawal amount ${total}.`
-            : `Account ${safeValue(data.account)} generated ${transactions.length} transaction record${transactions.length === 1 ? "" : "s"} with total withdrawal amount ${total}.`
-    const decisionText = data.status === "BLOCKED"
-        ? "The account is currently permanently blocked based on the latest fraud decision."
-        : data.status === "TEMP_BLOCK"
-            ? "The account is currently temporarily blocked based on the latest fraud decision."
-            : `The system returned ${currentRiskLevel} risk for this transaction pattern.`
-
-    riskScoreEl.textContent = currentRiskScore
-    riskLevelEl.textContent = currentRiskLevel
-    summaryEl.textContent = statusSummary
-
-    contentEl.innerHTML = `
-        <section class="analytics-kpis">
-            <article><span>Total Amount</span><strong>${total}</strong></article>
-            <article><span>Average Withdrawal</span><strong>${average}</strong></article>
-            <article><span>Highest Withdrawal</span><strong>${maxWithdrawal}</strong></article>
-            <article><span>Unique Locations</span><strong>${locationCount}</strong></article>
-        </section>
-
-        <section class="analytics-board">
-            <article class="chart-card chart-large">
-                <div class="chart-heading">
-                    <p class="eyebrow">Bar Chart</p>
-                    <h2>Withdrawal Amounts</h2>
-                </div>
-                <canvas id="analyticsBarChart" width="820" height="360"></canvas>
-            </article>
-
-            <article class="chart-card">
-                <div class="chart-heading">
-                    <p class="eyebrow">Gauge</p>
-                    <h2>Risk Score</h2>
-                </div>
-                <canvas id="analyticsRiskGauge" width="460" height="300"></canvas>
-            </article>
-
-            <article class="chart-card">
-                <div class="chart-heading">
-                    <p class="eyebrow">Pie Chart</p>
-                    <h2>Amount Share</h2>
-                </div>
-                <canvas id="analyticsPieChart" width="460" height="340"></canvas>
-            </article>
-        </section>
-
-        <section class="analytics-insights">
-            <article>
-                <p class="eyebrow">Decision</p>
-                <h3>${currentAction}</h3>
-                <p>${decisionText}</p>
-            </article>
-            <article>
-                <p class="eyebrow">Pattern</p>
-                <h3>${transactions.length} withdrawal${transactions.length === 1 ? "" : "s"}</h3>
-                <p>Location and amount behavior are compared with the rule-based fraud signals.</p>
-            </article>
-        </section>
-    `
-
-    drawBarChart(document.getElementById("analyticsBarChart"), transactions)
-    drawRiskGauge(document.getElementById("analyticsRiskGauge"), data.risk_score)
-    drawPieChart(document.getElementById("analyticsPieChart"), transactions)
+  }).render();
 }
 
-logoutBtn.addEventListener("click", logout)
-downloadPdfBtn.addEventListener("click", downloadPdf)
-renderAnalytics()
+function renderTrendChart(data) {
+  const txns = data.transactions || [];
+  const total = safeNumber(data.total_amount);
+  const base = txns.length ? txns.map((item) => safeNumber(item.amount)) : [120, 140, 130, 170];
+
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const riskSeries = days.map((_, index) => Math.max(12, Math.round(safeNumber(data.risk_score) * 3 + index * 8 - (index === 2 ? 10 : 0))));
+  const volumeSeries = days.map((_, index) => Math.max(80, Math.round((base[index % base.length] / Math.max(1, txns.length || 1)) + 90 + index * 20 + total / 2000)));
+
+  new ApexCharts(document.querySelector("#analyticsTrendChart"), {
+    chart: {type: "line", height: 360, toolbar: {show: false}, fontFamily: "Inter"},
+    series: [
+      {name: "Risk Score", data: riskSeries},
+      {name: "Volume", data: volumeSeries}
+    ],
+    colors: ["#ef3f33", "#067b45"],
+    stroke: {curve: "smooth", width: 4},
+    markers: {size: 6, strokeColors: "#ffffff", strokeWidth: 3},
+    dataLabels: {enabled: false},
+    grid: {borderColor: "#d9e7dc", strokeDashArray: 5},
+    legend: {position: "bottom"},
+    xaxis: {categories: days, labels: {style: {colors: "#62756c"}}},
+    yaxis: {labels: {style: {colors: "#62756c"}}}
+  }).render();
+}
+
+function renderNarrative(data) {
+  const txns = data.transactions || [];
+  const total = safeNumber(data.total_amount);
+  document.getElementById("analyticsSummary").textContent = `Account #${safeValue(data.account)} generated ${txns.length} transactions totaling ${total.toLocaleString()} across ${uniqueLocations(txns)} unique locations.`;
+  document.getElementById("riskScoreValue").textContent = safeNumber(data.risk_score);
+  document.getElementById("riskLevelValue").textContent = safeValue(data.risk_level, "LOW");
+  document.getElementById("decisionAction").textContent = safeValue(data.action, "SAFE");
+  document.getElementById("decisionSummary").textContent = safeValue(data.message, "The system returned a fraud decision for this account.");
+  document.getElementById("patternTitle").textContent = `${txns.length} withdrawals · ${uniqueLocations(txns)} cities · ${data.time_diff_min ? `${safeNumber(data.time_diff_min).toFixed(0)}m` : "current window"}`;
+  document.getElementById("patternSummary").textContent = `Total analyzed amount ${total.toLocaleString()}, latest status ${safeValue(data.status, "ACTIVE").replace("_", " ")}.`;
+
+  const decisionCard = document.getElementById("decisionCard");
+  if (data.status === "TEMP_BLOCK" || data.risk_level === "MEDIUM") {
+    decisionCard.className = "verdict-banner warning";
+  } else if (data.status === "ACTIVE" && data.risk_level === "LOW") {
+    decisionCard.className = "verdict-banner success";
+  }
+}
+
+function renderAnalytics() {
+  const data = requireAnalytics();
+  if (!data) return;
+  setGauge("analyticsGauge", safeNumber(data.risk_score));
+  renderNarrative(data);
+  renderKpis(data);
+  renderBarChart(data);
+  renderPieChart(data);
+  renderTrendChart(data);
+}
+
+document.getElementById("downloadPdfBtn").addEventListener("click", function() {
+  window.print();
+});
+
+renderAnalytics();

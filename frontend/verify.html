@@ -9,11 +9,21 @@
 <body>
 <main class="auth-page compact-auth">
     <section class="auth-visual">
-        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=80" alt="Card payment verification">
+        <img src="https://images.unsplash.com/photo-1579621970795-87facc2f976d?auto=format&fit=crop&w=1200&q=80" alt="Email verification experience">
         <div class="auth-visual-copy">
             <p class="eyebrow">Email Verification</p>
-            <h1>One code confirms the account is yours.</h1>
-            <p>Enter the OTP sent to your email address to activate login access.</p>
+            <h1>One clean verification step unlocks the full workspace.</h1>
+            <p>Enter the latest OTP from your inbox to activate login and account analysis access.</p>
+            <div class="auth-highlights">
+                <article>
+                    <strong>Fast Activation</strong>
+                    <span>Verify once and move directly into secure login.</span>
+                </article>
+                <article>
+                    <strong>Email-backed Access</strong>
+                    <span>The code is delivered to the email used during registration.</span>
+                </article>
+            </div>
         </div>
     </section>
 
@@ -22,23 +32,26 @@
             <a class="brand" href="index.html">ATM Shield</a>
             <a class="btn btn-secondary" href="index.html">Home</a>
         </div>
-        <div class="section-heading">
-            <p class="eyebrow">OTP</p>
-            <h2>Verify your account</h2>
-            <p>Use the latest code from your email.</p>
+        <div class="auth-panel-shell">
+            <p class="auth-caption">Email confirmation required</p>
+            <div class="section-heading">
+                <p class="eyebrow">OTP</p>
+                <h2>Verify your account</h2>
+                <p>Use the latest code from your email to continue.</p>
+            </div>
+
+            <form id="verifyForm" class="form-stack">
+                <label>
+                    <span>OTP</span>
+                    <input id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6 digit OTP">
+                </label>
+
+                <p id="notice" class="notice" role="status"></p>
+                <button class="btn btn-primary" type="submit">Verify Account</button>
+            </form>
+
+            <p class="auth-link">Need a new account? <a href="register.html">Register again</a></p>
         </div>
-
-        <form id="verifyForm" class="form-stack">
-            <label>
-                <span>OTP</span>
-                <input id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6 digit OTP">
-            </label>
-
-            <p id="notice" class="notice" role="status"></p>
-            <button class="btn btn-primary" type="submit">Verify Account</button>
-        </form>
-
-        <p class="auth-link">Need a new account? <a href="register.html">Register again</a></p>
     </section>
 </main>
 <script src="js/auth.js"></script>

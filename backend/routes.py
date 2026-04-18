@@ -5,6 +5,7 @@ from database.db import get_connection
 import sqlite3
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import bcrypt
 
 router = APIRouter()
@@ -51,10 +52,49 @@ def send_email(to_email, otp):
     sender = "diucse66@gmail.com"
     password = "yivk ayao yuqf mflx"
 
-    msg = MIMEText(f"Your OTP is: {otp}")
-    msg["Subject"] = "ATM Fraud System OTP"
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "ATM Shield Verification Code"
     msg["From"] = sender
     msg["To"] = to_email
+
+    html = f"""
+    <html>
+        <body style="margin:0;padding:0;background:#eef3ef;font-family:Arial,Helvetica,sans-serif;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef3ef;padding:28px 12px;">
+                <tr>
+                    <td align="center">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #dce5df;">
+                            <tr>
+                                <td style="padding:28px 32px;background:linear-gradient(135deg,#157347,#177d72);color:#ffffff;">
+                                    <div style="font-size:13px;font-weight:800;letter-spacing:0;text-transform:uppercase;opacity:0.86;margin-bottom:10px;">ATM Shield</div>
+                                    <div style="font-size:30px;font-weight:800;line-height:1.15;">Verify your account</div>
+                                    <p style="margin:12px 0 0;color:rgba(255,255,255,0.82);font-size:15px;line-height:1.6;">Use the verification code below to activate your access and continue to secure fraud analysis.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:32px;">
+                                    <p style="margin:0 0 16px;color:#5f6d64;font-size:15px;line-height:1.7;">Enter this one-time code on the verification page:</p>
+                                    <div style="display:inline-block;padding:16px 24px;border-radius:8px;background:#f6faf7;border:1px solid #dce5df;color:#16201a;font-size:34px;font-weight:800;letter-spacing:4px;">{otp}</div>
+                                    <p style="margin:18px 0 0;color:#5f6d64;font-size:14px;line-height:1.7;">If you did not request this account, you can ignore this email.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:18px 32px;border-top:1px solid #edf2ee;color:#7a887f;font-size:13px;line-height:1.6;">
+                                    ATM Shield fraud monitoring workflow
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+    </html>
+    """
+
+    text = f"ATM Shield verification code: {otp}"
+
+    msg.attach(MIMEText(text, "plain"))
+    msg.attach(MIMEText(html, "html"))
 
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
         server.starttls()

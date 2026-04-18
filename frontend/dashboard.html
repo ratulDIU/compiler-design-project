@@ -1,78 +1,114 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Transaction Check | ATM Shield</title>
-<link rel="stylesheet" href="css/style.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dashboard | ATM Shield</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </head>
-<body>
-<div class="app-shell">
-    <header class="topbar">
-        <a class="brand" href="index.html">ATM Shield</a>
-        <nav class="top-actions">
-            <span id="sessionLabel" class="session-label">Checking session</span>
-            <a class="btn btn-secondary" href="index.html">Home</a>
-            <a class="btn btn-secondary" href="profile.html">Profile</a>
-            <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
-        </nav>
-    </header>
+<body class="bg-mesh">
+<script src="js/shell.js"></script>
+<script>renderShell('dashboard');</script>
 
-    <main class="dashboard">
-        <section class="dashboard-intro">
-            <div>
-                <p class="eyebrow">Fraud Analysis</p>
-                <h1>Check a transaction pattern before approval.</h1>
-                <p>Enter the same account number used at registration. The system blocks analysis for any account that does not belong to the logged-in user.</p>
-            </div>
-            <img src="https://images.unsplash.com/photo-1556740758-90de374c12ad?auto=format&fit=crop&w=700&q=80" alt="Secure banking dashboard">
-        </section>
+<main class="container page">
+  <section class="hero-shell">
+    <article class="hero-banner">
+      <div class="hero-live">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 4-1.3 2.6L10.6 8l2.6 1.3L14.5 12l1.3-2.7L18.4 8l-2.6-1.4L14.5 4Z"></path><path d="m6 14 1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z"></path></svg>
+        Live · Last 24H
+      </div>
+      <h1 id="dashboardTitle">Welcome back, analyst.</h1>
+      <p id="dashboardSubtitle">Your portfolio is operating within normal risk bounds. Open the latest analysis or submit a new withdrawal case.</p>
+      <div class="hero-actions">
+        <a href="result.html" class="btn btn-light btn-lg">Open Result</a>
+        <a href="analytics.html" class="btn btn-glass btn-lg">View Analytics</a>
+        <a href="analyzer.html" class="btn btn-glass btn-lg">New Analysis</a>
+      </div>
+    </article>
 
-        <section class="workspace">
-            <form id="form" class="analysis-form">
-                <div class="section-heading">
-                    <p class="eyebrow">Transaction Details</p>
-                    <h2>Analyze Withdrawals</h2>
-                    <p id="accountHint">Your registered account will be checked before analysis starts.</p>
-                </div>
+    <aside class="hero-sidecard score-card">
+      <div class="page-eyebrow">Risk Health</div>
+      <h2>Portfolio Score</h2>
+      <div class="score-gauge">
+        <svg viewBox="0 0 220 220" aria-hidden="true">
+          <defs>
+            <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#f6d14d"></stop>
+              <stop offset="100%" stop-color="#1aba60"></stop>
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="110" cy="110" r="78"></circle>
+          <circle id="dashboardGauge" class="fill" cx="110" cy="110" r="78"></circle>
+        </svg>
+        <div class="score-gauge-text">
+          <div>
+            <strong id="portfolioScore">86</strong>
+            <span id="portfolioLabel">Healthy</span>
+          </div>
+        </div>
+      </div>
+      <div class="score-breakdown">
+        <article class="pass"><strong id="passRate">94%</strong><span>Pass</span></article>
+        <article class="review"><strong id="reviewRate">4.6%</strong><span>Review</span></article>
+        <article class="block"><strong id="blockRate">1.4%</strong><span>Block</span></article>
+      </div>
+    </aside>
+  </section>
 
-                <label>
-                    <span>Account Number</span>
-                    <input id="account" type="text" inputmode="numeric" placeholder="Enter account number">
-                </label>
+  <section class="stat-grid section" id="dashboardStats"></section>
 
-                <div class="transaction-header">
-                    <div>
-                        <h3>Withdrawals</h3>
-                        <p>Add each withdrawal amount and location.</p>
-                    </div>
-                    <button id="addTransactionBtn" class="btn btn-secondary" type="button">Add Transaction</button>
-                </div>
+  <section class="grid-main section">
+    <article class="card">
+      <div class="card-header">
+        <div>
+          <div class="page-eyebrow">Activity</div>
+          <h2 class="card-title">Transactions vs Flagged</h2>
+          <p class="card-desc">Recent account activity derived from the latest saved case.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="dashboardTrend" class="chart-shell tall"></div>
+      </div>
+    </article>
 
-                <div id="transactions" class="transaction-list"></div>
+    <article class="card">
+      <div class="card-header">
+        <div>
+          <div class="page-eyebrow">Signals</div>
+          <h2 class="card-title">Current Breakdown</h2>
+          <p class="card-desc">Severity mix across the currently selected case.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="dashboardMix" class="chart-shell"></div>
+      </div>
+    </article>
+  </section>
 
-                <label id="timeWrapper" class="hidden">
-                    <span>Time Interval</span>
-                    <input id="interval" type="number" min="1" placeholder="Minutes between withdrawals">
-                </label>
+  <section class="card section">
+    <div class="card-header">
+      <div>
+        <div class="page-eyebrow">Recent</div>
+        <h2 class="card-title">Latest Transactions</h2>
+        <p class="card-desc">Submitted withdrawals from the most recent analysis result.</p>
+      </div>
+      <a href="analyzer.html" class="btn btn-outline">Analyze New Case</a>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Account</th><th>Location</th><th>Amount</th><th>Risk</th><th>Status</th><th>Time</th></tr>
+        </thead>
+        <tbody id="dashboardTransactions"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
 
-                <p id="notice" class="notice" role="status"></p>
-                <button class="btn btn-primary" type="submit">Analyze Fraud Risk</button>
-            </form>
-
-            <aside class="summary-panel">
-                <p class="eyebrow">Rules</p>
-                <h2>Risk Signals</h2>
-                <ul class="signal-list">
-                    <li><span>01</span> Three or more withdrawals</li>
-                    <li><span>02</span> Total amount above 40,000</li>
-                    <li><span>03</span> Multiple withdrawal locations</li>
-                    <li><span>04</span> Very short time interval</li>
-                </ul>
-            </aside>
-        </section>
-    </main>
-</div>
-<script src="js/app.js"></script>
+<script src="js/dashboard.js"></script>
 </body>
 </html>

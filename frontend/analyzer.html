@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Analyzer | ATM Shield</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-mesh">
+<script src="js/shell.js"></script>
+<script>renderShell('analyzer');</script>
+
+<main class="container page">
+  <section class="analysis-grid">
+    <form id="form" class="card analysis-form-card">
+      <div class="page-eyebrow">Transaction Details</div>
+      <h1 class="form-section-title">Analyze Withdrawals</h1>
+      <p id="accountHint" class="form-session">Signed in account: --</p>
+
+      <div class="section">
+        <label class="label" for="account">Account Number</label>
+        <input class="input mono" id="account" type="text" inputmode="numeric" placeholder="Enter account number" />
+      </div>
+
+      <div class="transaction-toolbar">
+        <div>
+          <h3>Withdrawals</h3>
+          <p>Add each withdrawal amount and location.</p>
+        </div>
+        <button id="addTransactionBtn" class="btn btn-outline" type="button">+ Add Transaction</button>
+      </div>
+
+      <div id="transactions" class="transaction-list"></div>
+
+      <div id="timeWrapper" class="section hidden">
+        <label class="label" for="interval">Minutes Between Withdrawals</label>
+        <input class="input mono" id="interval" type="number" min="1" placeholder="Time interval in minutes" />
+      </div>
+
+      <p id="notice" class="notice section" role="status"></p>
+
+      <div class="hero-actions">
+        <button class="btn btn-primary btn-lg" type="submit">Analyze Fraud Risk</button>
+        <a href="dashboard.html" class="btn btn-outline btn-lg">Back to Dashboard</a>
+      </div>
+    </form>
+
+    <aside class="signal-panel">
+      <div class="page-eyebrow">Rules</div>
+      <h2 class="card-title">Risk Signals</h2>
+      <ul class="signal-list">
+        <li><span>01</span> Three or more withdrawals</li>
+        <li><span>02</span> Total amount above 40,000</li>
+        <li><span>03</span> Multiple withdrawal locations</li>
+        <li><span>04</span> Very short time interval</li>
+      </ul>
+
+      <div class="signal-stack">
+        <div class="signal-item">
+          <div class="signal-dot danger"></div>
+          <div><strong>Geographic anomaly</strong><span>Withdrawals across far-apart locations within a short window.</span></div>
+        </div>
+        <div class="signal-item">
+          <div class="signal-dot warning"></div>
+          <div><strong>Amount escalation</strong><span>Large totals and abnormal cash-out spikes increase fraud risk.</span></div>
+        </div>
+        <div class="signal-item">
+          <div class="signal-dot info"></div>
+          <div><strong>Velocity pattern</strong><span>Short intervals between attempts can trigger block decisions automatically.</span></div>
+        </div>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<script src="js/app.js"></script>
+</body>
+</html>

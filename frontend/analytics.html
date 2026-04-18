@@ -1,42 +1,116 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Analytics Report | ATM Shield</title>
-<link rel="stylesheet" href="css/style.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Analytics | ATM Shield</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </head>
-<body>
-<div class="app-shell">
-    <header class="topbar">
-        <a class="brand" href="index.html">ATM Shield</a>
-        <nav class="top-actions">
-            <a class="btn btn-secondary" href="index.html">Home</a>
-            <a class="btn btn-secondary" href="result.html">Back to Result</a>
-            <a class="btn btn-secondary" href="dashboard.html">New Analysis</a>
-            <a class="btn btn-secondary" href="profile.html">Profile</a>
-            <button id="downloadPdfBtn" class="btn btn-primary" type="button">Download PDF</button>
-            <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
-        </nav>
-    </header>
+<body class="bg-mesh">
+<script src="js/shell.js"></script>
+<script>renderShell('analytics');</script>
 
-    <main class="analytics-page">
-        <section class="analytics-hero">
-            <div>
-                <p class="eyebrow">Visual Analytics</p>
-                <h1>Fraud pattern report</h1>
-                <p id="analyticsSummary">Charts and insights from the latest ATM fraud analysis.</p>
-            </div>
-            <div class="analytics-score-card">
-                <p class="eyebrow">Current Risk</p>
-                <strong id="riskScoreValue">0</strong>
-                <span id="riskLevelValue">LOW</span>
-            </div>
-        </section>
+<main class="container page">
+  <section class="analytics-top">
+    <article class="analytics-copy glass-card">
+      <div class="page-eyebrow">Visual Analytics</div>
+      <h1>Fraud pattern <span>report</span></h1>
+      <p id="analyticsSummary">Charts and insights from the latest ATM fraud analysis are shown here.</p>
+      <div class="analytics-actions">
+        <a href="result.html" class="btn btn-outline btn-lg">Back to Result</a>
+        <button id="downloadPdfBtn" class="btn btn-primary btn-lg" type="button">Download PDF</button>
+      </div>
+    </article>
 
-        <section id="analyticsContent" class="analytics-layout"></section>
-    </main>
-</div>
+    <aside class="hero-sidecard score-card">
+      <div class="page-eyebrow">Current Risk</div>
+      <h2>Composite Score</h2>
+      <div class="score-gauge">
+        <svg viewBox="0 0 220 220" aria-hidden="true">
+          <defs>
+            <linearGradient id="analyticsGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#ffffff"></stop>
+              <stop offset="100%" stop-color="rgba(255,255,255,0.35)"></stop>
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="110" cy="110" r="78"></circle>
+          <circle id="analyticsGauge" class="fill" cx="110" cy="110" r="78" style="stroke:url(#analyticsGaugeGradient)"></circle>
+        </svg>
+        <div class="score-gauge-text">
+          <div>
+            <strong id="riskScoreValue">0</strong>
+            <span id="riskLevelValue">LOW</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <section id="analyticsKpis" class="metric-grid section"></section>
+
+  <section class="split-grid section">
+    <article class="card">
+      <div class="card-header">
+        <div>
+          <div class="page-eyebrow">Bar Chart</div>
+          <h2 class="card-title">Withdrawal Amounts</h2>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="analyticsBarChart" class="chart-shell tall"></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-header">
+        <div>
+          <div class="page-eyebrow">Pie Chart</div>
+          <h2 class="card-title">Amount Share</h2>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="analyticsPieChart" class="chart-shell"></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="card section">
+    <div class="card-header">
+      <div>
+        <div class="page-eyebrow">Trend</div>
+        <h2 class="card-title">Risk vs Volume</h2>
+        <p class="card-desc">A seven-day projection around the latest saved case.</p>
+      </div>
+      <span class="badge badge-success">Updated</span>
+    </div>
+    <div class="card-body">
+      <div id="analyticsTrendChart" class="chart-shell"></div>
+    </div>
+  </section>
+
+  <section class="split-grid section">
+    <article id="decisionCard" class="verdict-banner danger">
+      <div class="page-eyebrow">Decision</div>
+      <h2 id="decisionAction" class="card-title" style="color:inherit;font-size:3.2rem;">Permanent Block</h2>
+      <p id="decisionSummary" class="verdict-summary" style="font-size:1.12rem;max-width:none;">The system returned a high-risk verdict for this transaction pattern.</p>
+    </article>
+
+    <article class="card">
+      <div class="card-header">
+        <div>
+          <div class="page-eyebrow">Pattern</div>
+          <h2 class="card-title" id="patternTitle">4 withdrawals · 4 cities</h2>
+          <p id="patternSummary" class="card-desc">Locations and amount behavior are compared with rule-based fraud signals and historical baselines.</p>
+        </div>
+      </div>
+    </article>
+  </section>
+</main>
+
 <script src="js/analytics.js"></script>
 </body>
 </html>

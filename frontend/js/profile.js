@@ -5,16 +5,6 @@ const accountEl = document.getElementById("profileAccount")
 const emailEl = document.getElementById("profileEmail")
 const avatarEl = document.getElementById("profileAvatar")
 const noticeEl = document.getElementById("profileNotice")
-const logoutBtn = document.getElementById("logoutBtn")
-
-function logout(){
-    localStorage.removeItem("loggedInUsername")
-    localStorage.removeItem("loggedInAccount")
-    localStorage.removeItem("loggedInEmail")
-    localStorage.removeItem("fraudResult")
-    window.location.href = "login.html"
-}
-
 function setProfile(profile){
     usernameEl.textContent = profile.username || "N/A"
     accountEl.textContent = profile.account_number || "N/A"
@@ -59,5 +49,4 @@ async function loadProfile(){
     }
 }
 
-logoutBtn.addEventListener("click", logout)
 loadProfile()
