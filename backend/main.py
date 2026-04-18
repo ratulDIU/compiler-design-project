@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from routes import router
 
 app = FastAPI(title="ATM Fraud Detection API")
@@ -12,8 +13,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# API routes
 app.include_router(router)
 
-@app.get("/")
-def home():
-    return {"message": "ATM Fraud Detection System Running"}
+# 🔥 FRONTEND SERVE (ADD THIS)
+app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
