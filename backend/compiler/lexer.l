@@ -18,7 +18,7 @@
     return NUMBER;
 }
 
-/* 🔥 support lat,lon */
+/*  support lat,lon */
 [0-9.,]+ {
     yylval.str = strdup(yytext);
     return CITY;
